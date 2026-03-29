@@ -10,6 +10,7 @@ from sklearn.metrics import accuracy_score
 from sklearn.preprocessing import StandardScaler
 from sklearn.svm import SVC
 from sklearn.metrics import classification_report
+from sklearn.metrics import confusion_matrix, ConfusionMatrixDisplay
 
 
 
@@ -36,6 +37,9 @@ print(df.head())
 threshold = df["Stream"].quantile(0.75)
 df["hit"] = (df["Stream"] >= threshold).astype(int)
 y = df["hit"]
+sns.countplot(x=df["hit"])
+plt.title("hit vs non hit distribution")
+plt.show()
 
 print("Hit threshold:", threshold)
 print(df["hit"].value_counts())
@@ -58,10 +62,16 @@ print("\n === LR classification report ===")
 print(classification_report(y_test, pred_log))
 
 #Random forest
-rf_model = RandomForestClassifier(n_estimators=42)
+rf_model = RandomForestClassifier(n_estimators=100, random_state=42)
 rf_model.fit(x_train, y_train)
 pred_rf = rf_model.predict(x_test)
 print("Random Forest accuracy:", accuracy_score(y_test, pred_rf))
+cm = confusion_matrix(y_test, pred_rf)
+disp = ConfusionMatrixDisplay(confusion_matrix=cm)
+disp.plot()
+plt.title("Confusion Matrix Random Forest")
+plt.show()
+
 print("\n === RF classification report ===")
 print(classification_report(y_test, pred_rf))
 
@@ -106,7 +116,7 @@ plt.xlabel("Impact on hit probability")
 plt.show()
 
 print("\nComparatie lr vs rf vs knn vs svm:")
-print("Logistic regression:", accuracy_score(y_test, pred_log))
-print("Random Forest:", accuracy_score(y_test, pred_rf))
-print("KNN:", accuracy_score(y_test, pred_knn))
-print("SVM:", accuracy_score(y_test, pred_svm))
+print(f"Logistic regression:{accuracy_score(y_test, pred_log):.3f}")
+print(f"Random Forest:{accuracy_score(y_test, pred_rf):.3f}")
+print(f"KNN:{accuracy_score(y_test, pred_knn):.3f}")
+print(f"SVM:{accuracy_score(y_test, pred_svm):.3f}")
