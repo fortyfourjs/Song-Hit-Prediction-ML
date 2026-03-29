@@ -9,6 +9,8 @@ from sklearn.neighbors import KNeighborsClassifier
 from sklearn.metrics import accuracy_score
 from sklearn.preprocessing import StandardScaler
 from sklearn.svm import SVC
+from sklearn.metrics import classification_report
+
 
 
 #Incarcare set de date
@@ -50,16 +52,18 @@ x_test = scaler.transform(x_test)
 model = LogisticRegression(max_iter=1000)
 model.fit(x_train, y_train)
 
-
-
 pred_log = model.predict(x_test)
 print("logistic regression accuracy:", accuracy_score(y_test, pred_log))
+print("\n === LR classification report ===")
+print(classification_report(y_test, pred_log))
 
 #Random forest
 rf_model = RandomForestClassifier(n_estimators=42)
 rf_model.fit(x_train, y_train)
 pred_rf = rf_model.predict(x_test)
 print("Random Forest accuracy:", accuracy_score(y_test, pred_rf))
+print("\n === RF classification report ===")
+print(classification_report(y_test, pred_rf))
 
 #KNN
 knn = KNeighborsClassifier(n_neighbors=5)
@@ -92,6 +96,13 @@ sns.histplot(df["Stream"], bins=50, ax=axes[1], log_scale=True)
 axes[1].set_title("Stream distribution")
 
 plt.tight_layout()
+plt.show()
+
+coef = model.coef_[0]
+plt.figure(figsize=(8,6))
+plt.barh(features, coef)
+plt.title("Coeficienti Logistic Regression")
+plt.xlabel("Impact on hit probability")
 plt.show()
 
 print("\nComparatie lr vs rf vs knn vs svm:")
