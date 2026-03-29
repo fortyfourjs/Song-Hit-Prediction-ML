@@ -3,10 +3,13 @@ import seaborn as sns
 import matplotlib.pyplot as plt
 import numpy as np
 from sklearn.ensemble import RandomForestClassifier
-
 from sklearn.model_selection import train_test_split
 from sklearn.linear_model import LogisticRegression
+from sklearn.neighbors import KNeighborsClassifier
 from sklearn.metrics import accuracy_score
+from sklearn.preprocessing import StandardScaler
+from sklearn.svm import SVC
+
 
 #Incarcare set de date
 df = pd.read_csv("../data/cleaned_dataset.csv")
@@ -35,12 +38,19 @@ y = df["hit"]
 print("Hit threshold:", threshold)
 print(df["hit"].value_counts())
 
+
 #train/test split 80/20
 x_train, x_test, y_train, y_test = train_test_split(x,y,test_size = 0.2, random_state = 42)
+scaler = StandardScaler()
+x_train = scaler.fit_transform(x_train)
+x_test = scaler.transform(x_test)
+
 
 #Logistic Regression
 model = LogisticRegression(max_iter=1000)
 model.fit(x_train, y_train)
+
+
 
 pred_log = model.predict(x_test)
 print("logistic regression accuracy:", accuracy_score(y_test, pred_log))
@@ -50,6 +60,19 @@ rf_model = RandomForestClassifier(n_estimators=42)
 rf_model.fit(x_train, y_train)
 pred_rf = rf_model.predict(x_test)
 print("Random Forest accuracy:", accuracy_score(y_test, pred_rf))
+
+#KNN
+knn = KNeighborsClassifier(n_neighbors=5)
+knn.fit(x_train, y_train)
+pred_knn = knn.predict(x_test)
+print("KNN accuracy:", accuracy_score(y_test, pred_knn))
+
+#SVM
+svm = SVC()
+svm.fit(x_train, y_train)
+pred_svm = svm.predict(x_test)
+print("SVM accuracy:", accuracy_score(y_test, pred_svm))
+
 #importanta proprietati
 importance = rf_model.feature_importances_
 indices = np.argsort(importance)
@@ -71,6 +94,8 @@ axes[1].set_title("Stream distribution")
 plt.tight_layout()
 plt.show()
 
-print("\nComparatie lr vs rf:")
+print("\nComparatie lr vs rf vs knn vs svm:")
 print("Logistic regression:", accuracy_score(y_test, pred_log))
 print("Random Forest:", accuracy_score(y_test, pred_rf))
+print("KNN:", accuracy_score(y_test, pred_knn))
+print("SVM:", accuracy_score(y_test, pred_svm))
