@@ -1,3 +1,5 @@
+from turtledemo.chaos import plot
+
 import pandas as pd
 import seaborn as sns
 import matplotlib.pyplot as plt
@@ -57,7 +59,6 @@ model = LogisticRegression(max_iter=1000)
 model.fit(x_train, y_train)
 
 pred_log = model.predict(x_test)
-print("logistic regression accuracy:", accuracy_score(y_test, pred_log))
 print("\n === LR classification report ===")
 print(classification_report(y_test, pred_log))
 
@@ -65,7 +66,6 @@ print(classification_report(y_test, pred_log))
 rf_model = RandomForestClassifier(n_estimators=100, random_state=42)
 rf_model.fit(x_train, y_train)
 pred_rf = rf_model.predict(x_test)
-print("Random Forest accuracy:", accuracy_score(y_test, pred_rf))
 cm = confusion_matrix(y_test, pred_rf)
 disp = ConfusionMatrixDisplay(confusion_matrix=cm)
 disp.plot()
@@ -79,13 +79,25 @@ print(classification_report(y_test, pred_rf))
 knn = KNeighborsClassifier(n_neighbors=5)
 knn.fit(x_train, y_train)
 pred_knn = knn.predict(x_test)
-print("KNN accuracy:", accuracy_score(y_test, pred_knn))
+cm_knn = confusion_matrix(y_test, pred_knn)
+disp_knn = ConfusionMatrixDisplay(confusion_matrix=cm_knn)
+disp_knn.plot()
+plt.title("Confusion Matrix KNN")
+plt.show()
+print(classification_report(y_test, pred_knn))
+
 
 #SVM
 svm = SVC()
 svm.fit(x_train, y_train)
 pred_svm = svm.predict(x_test)
-print("SVM accuracy:", accuracy_score(y_test, pred_svm))
+cm_svm = confusion_matrix(y_test, pred_svm)
+disp_svm = ConfusionMatrixDisplay(confusion_matrix=cm_svm)
+disp_svm.plot()
+plt.title("Confusion Matrix SVM")
+plt.show()
+print(classification_report(y_test, pred_svm))
+
 
 #importanta proprietati
 importance = rf_model.feature_importances_
@@ -96,6 +108,7 @@ plt.barh(range(len(indices)), importance[indices], align='center')
 plt.yticks(range(len(indices)), [features[i] for i in indices])
 plt.title("Feature importances")
 plt.show()
+
 #Visualization
 fig, axes = plt.subplots(1,2, figsize = (16,6))
 
@@ -114,6 +127,21 @@ plt.barh(features, coef)
 plt.title("Coeficienti Logistic Regression")
 plt.xlabel("Impact on hit probability")
 plt.show()
+
+rezultate = {
+    "Logistic Regression": accuracy_score(y_test, pred_log),
+    "Random Forest": accuracy_score(y_test, pred_rf),
+    "KNN": accuracy_score(y_test, pred_knn),
+    "SVM": accuracy_score(y_test, pred_svm)
+}
+plt.figure(figsize=(8,6))
+plt.barh(list(rezultate.keys()), list(rezultate.values()), color="steelblue")
+plt.xlim(0.5, 1.0)
+plt.xlabel("Precizie")
+plt.title("Comparatie modele - Precizie")
+plt.tight_layout()
+plt.show()
+
 
 print("\nComparatie lr vs rf vs knn vs svm:")
 print(f"Logistic regression:{accuracy_score(y_test, pred_log):.3f}")
