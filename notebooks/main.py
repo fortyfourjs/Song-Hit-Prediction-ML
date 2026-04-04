@@ -13,6 +13,8 @@ from sklearn.preprocessing import StandardScaler
 from sklearn.svm import SVC
 from sklearn.metrics import classification_report
 from sklearn.metrics import confusion_matrix, ConfusionMatrixDisplay
+from sklearn.model_selection import cross_val_score #cross validation
+from sklearn.metrics import RocCurveDisplay #roc
 
 
 
@@ -97,7 +99,10 @@ disp_svm.plot()
 plt.title("Confusion Matrix SVM")
 plt.show()
 print(classification_report(y_test, pred_svm))
-
+#cross validation 5 times
+for name, model_cv in [("LR", model), ("RF", rf_model), ("KNN", knn), ("SVM", svm)]:
+    scores = cross_val_score(model_cv, x_train, y_train, cv=5, scoring="accuracy")
+    print(f"{name}: {scores.mean():.3f} (+/- {scores.std():.3f})")
 
 #importanta proprietati
 importance = rf_model.feature_importances_
@@ -126,6 +131,18 @@ plt.figure(figsize=(8,6))
 plt.barh(features, coef)
 plt.title("Coeficienti Logistic Regression")
 plt.xlabel("Impact on hit probability")
+plt.show()
+
+#ROC Curve
+fig, ax = plt.subplots(figsize=(8,6))
+for name, clf, pred in [
+    ("Logistic Regression", model, pred_log),
+    ("Random Forest", rf_model, pred_rf),
+    ("KNN", knn, pred_knn),
+    ("SVM", svm, pred_svm)
+]:
+    RocCurveDisplay.from_estimator(clf, x_test, y_test, ax=ax, name=name)
+plt.title("ROC Curve - Comparatie modele")
 plt.show()
 
 rezultate = {
