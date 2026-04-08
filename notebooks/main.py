@@ -3,6 +3,7 @@ import pandas as pd
 import seaborn as sns
 import matplotlib.pyplot as plt
 import numpy as np
+from sklearn.model_selection import GridSearchCV
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.model_selection import train_test_split, cross_val_score
 from sklearn.linear_model import LogisticRegression
@@ -15,6 +16,7 @@ from sklearn.metrics import confusion_matrix, ConfusionMatrixDisplay
 from sklearn.pipeline import Pipeline
 from sklearn.metrics import RocCurveDisplay #roc
 from sklearn.svm import LinearSVC
+from xgboost import XGBClassifier
 
 
 
@@ -92,6 +94,7 @@ disp_knn = ConfusionMatrixDisplay(confusion_matrix=cm_knn)
 disp_knn.plot()
 plt.title("Confusion Matrix KNN")
 plt.show()
+print("\n === KNN classification report ===")
 print(classification_report(y_test, pred_knn))
 
 
@@ -104,7 +107,22 @@ disp_svm = ConfusionMatrixDisplay(confusion_matrix=cm_svm)
 disp_svm.plot()
 plt.title("Confusion Matrix SVM")
 plt.show()
+print("\n === SVM classification report ===")
 print(classification_report(y_test, pred_svm))
+
+#XGBoost
+xgb = XGBClassifier(n_estimators=200, learning_rate=0.1, max_depth=6, random_state=42,eval_metric="logloss", n_jobs=-1)
+xgb.fit(x_train, y_train)
+pred_xgb = xgb.predict(x_test)
+
+cm_xgb = confusion_matrix(y_test, pred_xgb)
+disp_xgb = ConfusionMatrixDisplay(confusion_matrix=cm_xgb)
+disp_xgb.plot()
+plt.title("Confusion Matrix XGBoost")
+plt.show()
+
+print("\n === XGBoost classification report ===")
+print(classification_report(y_test, pred_xgb))
 
 pipe_lr = Pipeline([
     ("scaler", StandardScaler()),
@@ -121,6 +139,10 @@ pipe_knn = Pipeline([
 pipe_svm = Pipeline([
     ("scaler", StandardScaler()),
     ("model", LinearSVC(class_weight="balanced", max_iter=2000))
+])
+pipe_xgb = Pipeline([
+    ("scaler", StandardScaler()),
+    ("model", XGBClassifier(n_estimators=200, learning_rate=0.1, max_depth=6, random_state=42, eval_metric="logloss", n_jobs=-1))
 ])
 #Cross validation pe x(date initiale)
 print("\n===Cross Validation(5fold)===")
@@ -163,6 +185,7 @@ for name, clf, pred in [
     ("Random Forest", rf_model, pred_rf),
     ("KNN", knn, pred_knn),
     # ("SVM", svm, pred_svm) incompatibil roc
+    ("XGB", xgb, pred_xgb)
 ]:
     RocCurveDisplay.from_estimator(clf, x_test, y_test, ax=ax, name=name)
 plt.title("ROC Curve - Comparatie modele")
@@ -172,7 +195,8 @@ rezultate = {
     "Logistic Regression": accuracy_score(y_test, pred_log),
     "Random Forest": accuracy_score(y_test, pred_rf),
     "KNN": accuracy_score(y_test, pred_knn),
-    "SVM": accuracy_score(y_test, pred_svm)
+    "SVM": accuracy_score(y_test, pred_svm),
+    "XGBoost": accuracy_score(y_test, pred_xgb)
 }
 plt.figure(figsize=(8,6))
 plt.barh(list(rezultate.keys()), list(rezultate.values()), color="steelblue")
