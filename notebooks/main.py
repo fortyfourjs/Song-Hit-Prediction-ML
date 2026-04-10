@@ -3,6 +3,7 @@ import pandas as pd
 import seaborn as sns
 import matplotlib.pyplot as plt
 import numpy as np
+from sklearn.model_selection import RandomizedSearchCV
 from sklearn.model_selection import GridSearchCV
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.model_selection import train_test_split, cross_val_score
@@ -17,6 +18,7 @@ from sklearn.pipeline import Pipeline
 from sklearn.metrics import RocCurveDisplay #roc
 from sklearn.svm import LinearSVC
 from xgboost import XGBClassifier
+from scipy.stats import randint
 
 
 
@@ -70,17 +72,48 @@ print(f"scale_pos_weight este: {ratio:.2f}")
 
 
 #Logistic Regression
-model = LogisticRegression(max_iter=1000, class_weight="balanced")
-model.fit(x_train, y_train)
-
-pred_log = model.predict(x_test)
+lr_param_grid = {
+    "C": [0.01, 0.1, 1, 10, 100],
+    "solver": ["lbfgs", "liblinear"],
+    "penalty": ["l2"]
+}
+lr_grid = GridSearchCV(
+    LogisticRegression(max_iter=1000, class_weight="balanced"),
+    lr_param_grid,
+    cv=5,
+    scoring="f1",
+    n_jobs=-1
+)
+lr_grid.fit(x_train, y_train)
+print("Best LR Params:", lr_grid.best_params_)
+best_lr = lr_grid.best_estimator_
+pred_log = best_lr.predict(x_test)
 print("\n === LR classification report ===")
 print(classification_report(y_test, pred_log))
 
-#Random forest
-rf_model = RandomForestClassifier(n_estimators=100, random_state=42, class_weight="balanced", n_jobs=-1)
-rf_model.fit(x_train, y_train)
-pred_rf = rf_model.predict(x_test)
+
+#Random Forest
+rf_param_grid = {
+    "n_estimators": [100, 200, 300],
+    "max_depth": [None, 10, 20, 30],
+    "min_samples_split": [2, 5, 10],
+    "min_samples_leaf": [1, 2, 4]
+}
+rf_grid = GridSearchCV(
+    RandomForestClassifier(class_weight="balanced", random_state=42, n_jobs=-1),
+    rf_param_grid,
+    cv=5,
+    scoring="f1",
+    n_jobs=-1,
+    verbose=1
+)
+rf_grid.fit(x_train, y_train)
+print("Best RF Params:", rf_grid.best_params_)
+print("Best RF F1 scores:", rf_grid.best_score_)
+best_rf = rf_grid.best_estimator_
+
+pred_rf = best_rf.predict(x_test)
+
 cm = confusion_matrix(y_test, pred_rf)
 disp = ConfusionMatrixDisplay(confusion_matrix=cm)
 disp.plot()
@@ -91,9 +124,23 @@ print("\n === RF classification report ===")
 print(classification_report(y_test, pred_rf))
 
 #KNN
-knn = KNeighborsClassifier(n_neighbors=5, n_jobs=-1)
-knn.fit(x_train, y_train)
-pred_knn = knn.predict(x_test)
+knn_param_grid = {
+    "n_neighbors": [3, 5, 7, 11, 15, 21],
+    "weights": ["uniform", "distance"],
+    "metric": ["euclidean","manhattan"]
+}
+knn_grid = GridSearchCV(
+    KNeighborsClassifier(n_jobs=-1),
+    knn_param_grid,
+    cv=5,
+    scoring="f1",
+    n_jobs=-1
+)
+knn_grid.fit(x_train, y_train)
+print("Best KNN params:", knn_grid.best_params_)
+best_knn = knn_grid.best_estimator_
+pred_knn = best_knn.predict(x_test)
+
 cm_knn = confusion_matrix(y_test, pred_knn)
 disp_knn = ConfusionMatrixDisplay(confusion_matrix=cm_knn)
 disp_knn.plot()
@@ -104,9 +151,23 @@ print(classification_report(y_test, pred_knn))
 
 
 #SVM
-svm = LinearSVC(class_weight="balanced", max_iter=2000) #linearsvc timesave, svc too slow
-svm.fit(x_train, y_train)
-pred_svm = svm.predict(x_test)
+svm_param_grid = {
+    "C": [0.01, 0.1, 1, 10],
+    "max_iter": [2000]
+}
+svm_grid = GridSearchCV(
+    LinearSVC(class_weight="balanced"),
+    svm_param_grid,
+    cv=5,
+    scoring="f1",
+    n_jobs=-1
+)
+svm_grid.fit(x_train, y_train)
+print("Best SVM params:", svm_grid.best_params_)
+best_svm = svm_grid.best_estimator_
+
+pred_svm = best_svm.predict(x_test)
+
 cm_svm = confusion_matrix(y_test, pred_svm)
 disp_svm = ConfusionMatrixDisplay(confusion_matrix=cm_svm)
 disp_svm.plot()
@@ -116,9 +177,29 @@ print("\n === SVM classification report ===")
 print(classification_report(y_test, pred_svm))
 
 #XGBoost
-xgb = XGBClassifier(n_estimators=200, learning_rate=0.1, max_depth=6, random_state=42,eval_metric="logloss", scale_pos_weight=ratio, n_jobs=-1)
-xgb.fit(x_train, y_train)
-pred_xgb = xgb.predict(x_test)
+xgb_param_dist = {
+    "n_estimators": randint(100, 400),
+    "max_depth": randint(3, 10),
+    "learning_rate": [0.01, 0.05, 0.1, 0.2],
+    "subsample": [0.6, 0.8, 1.0],
+    "colsample_bytree": [0.6, 0.8, 1.0]
+
+}
+xgb_rand = RandomizedSearchCV(
+    XGBClassifier(scale_pos_weight=ratio, eval_metric="logloss", random_state=42, n_jobs=-1),
+    xgb_param_dist,
+    n_iter=30,
+    cv=5,
+    scoring="f1",
+    n_jobs=-1,
+    verbose=1,
+    random_state=42
+)
+xgb_rand.fit(x_train, y_train)
+print("Best XGBoost params:", xgb_rand.best_params_)
+best_xgb = xgb_rand.best_estimator_
+
+pred_xgb =best_xgb.predict(x_test)
 
 cm_xgb = confusion_matrix(y_test, pred_xgb)
 disp_xgb = ConfusionMatrixDisplay(confusion_matrix=cm_xgb)
@@ -155,7 +236,7 @@ for name, pipe in [("LR", pipe_lr), ("RF",pipe_rf), ("KNN", pipe_knn), ("SVM", p
     scores = cross_val_score(pipe, x, y, cv=5, scoring="accuracy", n_jobs=-1)
     print(f"{name}: {scores.mean():.3f} (+/- {scores.std():.3f})")
 #importanta proprietati random forest
-importance = rf_model.feature_importances_
+importance = best_rf.feature_importances_
 indices = np.argsort(importance)
 
 plt.figure(figsize=(8,6))
@@ -176,7 +257,7 @@ axes[1].set_title("Popularity distribution")
 plt.tight_layout()
 plt.show()
 #coeficienti logistic regression
-coef = model.coef_[0]
+coef = best_lr.coef_[0]
 plt.figure(figsize=(8,6))
 plt.barh(features, coef)
 plt.title("Coeficienti Logistic Regression")
@@ -186,11 +267,11 @@ plt.show()
 #ROC Curve
 fig, ax = plt.subplots(figsize=(8,6))
 for name, clf, pred in [
-    ("Logistic Regression", model, pred_log),
-    ("Random Forest", rf_model, pred_rf),
-    ("KNN", knn, pred_knn),
+    ("Logistic Regression", best_lr, pred_log),
+    ("Random Forest", best_rf, pred_rf),
+    ("KNN", best_knn, pred_knn),
     # ("SVM", svm, pred_svm) incompatibil roc
-    ("XGB", xgb, pred_xgb)
+    ("XGB", best_xgb, pred_xgb)
 ]:
     RocCurveDisplay.from_estimator(clf, x_test, y_test, ax=ax, name=name)
 plt.title("ROC Curve - Comparatie modele")
