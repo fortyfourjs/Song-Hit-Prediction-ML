@@ -63,6 +63,11 @@ scaler = StandardScaler()
 x_train = scaler.fit_transform(x_train)
 x_test = scaler.transform(x_test)
 
+neg = (y_train == 0).sum()
+pos = (y_train == 1).sum()
+ratio = neg / pos
+print(f"scale_pos_weight este: {ratio:.2f}")
+
 
 #Logistic Regression
 model = LogisticRegression(max_iter=1000, class_weight="balanced")
@@ -111,7 +116,7 @@ print("\n === SVM classification report ===")
 print(classification_report(y_test, pred_svm))
 
 #XGBoost
-xgb = XGBClassifier(n_estimators=200, learning_rate=0.1, max_depth=6, random_state=42,eval_metric="logloss", n_jobs=-1)
+xgb = XGBClassifier(n_estimators=200, learning_rate=0.1, max_depth=6, random_state=42,eval_metric="logloss", scale_pos_weight=ratio, n_jobs=-1)
 xgb.fit(x_train, y_train)
 pred_xgb = xgb.predict(x_test)
 
@@ -142,7 +147,7 @@ pipe_svm = Pipeline([
 ])
 pipe_xgb = Pipeline([
     ("scaler", StandardScaler()),
-    ("model", XGBClassifier(n_estimators=200, learning_rate=0.1, max_depth=6, random_state=42, eval_metric="logloss", n_jobs=-1))
+    ("model", XGBClassifier(n_estimators=200, learning_rate=0.1, max_depth=6, random_state=42, eval_metric="logloss", scale_pos_weight=ratio, n_jobs=-1))
 ])
 #Cross validation pe x(date initiale)
 print("\n===Cross Validation(5fold)===")
@@ -212,3 +217,4 @@ print(f"Logistic regression:{accuracy_score(y_test, pred_log):.3f}")
 print(f"Random Forest:{accuracy_score(y_test, pred_rf):.3f}")
 print(f"KNN:{accuracy_score(y_test, pred_knn):.3f}")
 print(f"SVM:{accuracy_score(y_test, pred_svm):.3f}")
+print(f"XGBoost:{accuracy_score(y_test, pred_xgb):.3f}")
