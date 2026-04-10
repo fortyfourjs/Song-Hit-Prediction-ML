@@ -212,29 +212,30 @@ print(classification_report(y_test, pred_xgb))
 
 pipe_lr = Pipeline([
     ("scaler", StandardScaler()),
-    ("model", LogisticRegression(max_iter=1000, class_weight="balanced"))
+    ("model", best_lr)
 ])
 pipe_rf = Pipeline([
     ("scaler", StandardScaler()),
-    ("model", RandomForestClassifier(n_estimators=100, random_state=42, class_weight="balanced", n_jobs=-1))
+    ("model", best_rf)
 ])
 pipe_knn = Pipeline([
     ("scaler", StandardScaler()),
-    ("model", KNeighborsClassifier(n_neighbors=5, n_jobs=-1))
+    ("model", best_knn)
 ])
 pipe_svm = Pipeline([
     ("scaler", StandardScaler()),
-    ("model", LinearSVC(class_weight="balanced", max_iter=2000))
+    ("model", best_svm)
 ])
 pipe_xgb = Pipeline([
     ("scaler", StandardScaler()),
-    ("model", XGBClassifier(n_estimators=200, learning_rate=0.1, max_depth=6, random_state=42, eval_metric="logloss", scale_pos_weight=ratio, n_jobs=-1))
+    ("model", best_xgb)
 ])
 #Cross validation pe x(date initiale)
 print("\n===Cross Validation(5fold)===")
-for name, pipe in [("LR", pipe_lr), ("RF",pipe_rf), ("KNN", pipe_knn), ("SVM", pipe_svm)]:
-    scores = cross_val_score(pipe, x, y, cv=5, scoring="accuracy", n_jobs=-1)
+for name, pipe in [("LR", pipe_lr), ("RF",pipe_rf), ("KNN", pipe_knn), ("SVM", pipe_svm), ("XGB", pipe_xgb)]:
+    scores = cross_val_score(pipe, x, y, cv=5, scoring="f1", n_jobs=-1)
     print(f"{name}: {scores.mean():.3f} (+/- {scores.std():.3f})")
+
 #importanta proprietati random forest
 importance = best_rf.feature_importances_
 indices = np.argsort(importance)
