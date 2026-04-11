@@ -82,27 +82,30 @@ lr_grid = GridSearchCV(
     lr_param_grid,
     cv=5,
     scoring="f1",
-    n_jobs=-1
+    n_jobs=-1,
+    verbose=1
 )
 lr_grid.fit(x_train, y_train)
 print("Best LR Params:", lr_grid.best_params_)
+
 best_lr = lr_grid.best_estimator_
 pred_log = best_lr.predict(x_test)
+
 print("\n === LR classification report ===")
 print(classification_report(y_test, pred_log))
 
 
 #Random Forest
 rf_param_grid = {
-    "n_estimators": [100, 200, 300],
-    "max_depth": [None, 10, 20, 30],
+    "n_estimators": [100, 200, 300], #add 300 for proper grid
+    "max_depth": [None, 10, 20, 30], #add 30 for proper grid
     "min_samples_split": [2, 5, 10],
-    "min_samples_leaf": [1, 2, 4]
+    "min_samples_leaf": [1, 2, 4] #add 4 for proper grid
 }
 rf_grid = GridSearchCV(
     RandomForestClassifier(class_weight="balanced", random_state=42, n_jobs=-1),
     rf_param_grid,
-    cv=5,
+    cv=3, #change 3 to 5 for 5 folds, 3 is performance only goes from 540 fits to 108
     scoring="f1",
     n_jobs=-1,
     verbose=1
@@ -110,8 +113,8 @@ rf_grid = GridSearchCV(
 rf_grid.fit(x_train, y_train)
 print("Best RF Params:", rf_grid.best_params_)
 print("Best RF F1 scores:", rf_grid.best_score_)
-best_rf = rf_grid.best_estimator_
 
+best_rf = rf_grid.best_estimator_
 pred_rf = best_rf.predict(x_test)
 
 cm = confusion_matrix(y_test, pred_rf)
@@ -119,7 +122,6 @@ disp = ConfusionMatrixDisplay(confusion_matrix=cm)
 disp.plot()
 plt.title("Confusion Matrix Random Forest")
 plt.show()
-
 print("\n === RF classification report ===")
 print(classification_report(y_test, pred_rf))
 
@@ -134,10 +136,12 @@ knn_grid = GridSearchCV(
     knn_param_grid,
     cv=5,
     scoring="f1",
-    n_jobs=-1
+    n_jobs=-1,
+    verbose=1
 )
 knn_grid.fit(x_train, y_train)
 print("Best KNN params:", knn_grid.best_params_)
+
 best_knn = knn_grid.best_estimator_
 pred_knn = best_knn.predict(x_test)
 
@@ -160,12 +164,13 @@ svm_grid = GridSearchCV(
     svm_param_grid,
     cv=5,
     scoring="f1",
-    n_jobs=-1
+    n_jobs=-1,
+    verbose=1
 )
 svm_grid.fit(x_train, y_train)
 print("Best SVM params:", svm_grid.best_params_)
-best_svm = svm_grid.best_estimator_
 
+best_svm = svm_grid.best_estimator_
 pred_svm = best_svm.predict(x_test)
 
 cm_svm = confusion_matrix(y_test, pred_svm)
@@ -188,8 +193,8 @@ xgb_param_dist = {
 xgb_rand = RandomizedSearchCV(
     XGBClassifier(scale_pos_weight=ratio, eval_metric="logloss", random_state=42, n_jobs=-1),
     xgb_param_dist,
-    n_iter=30,
-    cv=5,
+    n_iter=15, #change to 30 for proper grid
+    cv=3, #change to 5, goes from 150 fits to 45
     scoring="f1",
     n_jobs=-1,
     verbose=1,
@@ -197,8 +202,8 @@ xgb_rand = RandomizedSearchCV(
 )
 xgb_rand.fit(x_train, y_train)
 print("Best XGBoost params:", xgb_rand.best_params_)
-best_xgb = xgb_rand.best_estimator_
 
+best_xgb = xgb_rand.best_estimator_
 pred_xgb =best_xgb.predict(x_test)
 
 cm_xgb = confusion_matrix(y_test, pred_xgb)
@@ -230,6 +235,7 @@ pipe_xgb = Pipeline([
     ("scaler", StandardScaler()),
     ("model", best_xgb)
 ])
+
 #Cross validation pe x(date initiale)
 print("\n===Cross Validation(5fold)===")
 for name, pipe in [("LR", pipe_lr), ("RF",pipe_rf), ("KNN", pipe_knn), ("SVM", pipe_svm), ("XGB", pipe_xgb)]:
@@ -257,6 +263,7 @@ axes[1].set_title("Popularity distribution")
 
 plt.tight_layout()
 plt.show()
+
 #coeficienti logistic regression
 coef = best_lr.coef_[0]
 plt.figure(figsize=(8,6))
@@ -285,6 +292,7 @@ rezultate = {
     "SVM": accuracy_score(y_test, pred_svm),
     "XGBoost": accuracy_score(y_test, pred_xgb)
 }
+
 plt.figure(figsize=(8,6))
 plt.barh(list(rezultate.keys()), list(rezultate.values()), color="steelblue")
 plt.xlim(0.5, 1.0)
