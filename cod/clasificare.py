@@ -20,7 +20,8 @@ from sklearn.svm import LinearSVC
 from xgboost import XGBClassifier
 from scipy.stats import randint
 from sklearn.model_selection import cross_validate
-
+from sklearn.metrics import precision_recall_curve
+from sklearn.model_selection import learning_curve
 os.makedirs("../plots", exist_ok=True)
 
 
@@ -298,6 +299,48 @@ for name, clf, pred in [
 plt.title("ROC Curve - Comparatie modele")
 plt.savefig("../plots/ROC_curve.pdf", dpi=300, bbox_inches="tight")
 plt.show()
+
+#Threshold tuning curve
+y_proba = best_xgb.predict_proba(x_test)[:, 1]
+precision, recall, thresholds = precision_recall_curve(y_test, y_proba)
+f1_scores = 2 * (precision[:-1]*recall[:-1]) / (precision[:-1]+recall[:-1] + 1e-9)
+best_thresh = thresholds[np.argmax(f1_scores)]
+
+plt.figure(figsize=(8,6))
+plt.plot(thresholds, precision[:-1], label="Precision")
+plt.plot(thresholds, recall[:-1], label="Recall")
+plt.plot(thresholds, f1_scores, label="F1")
+plt.axvline(best_thresh, color="red", linestyle="--", label=f"Best: {best_thresh:.2f}")
+plt.xlabel("Threshold")
+plt.title("Threshold Tuning - XGBoost")
+plt.legend()
+plt.savefig("../plots/threshold_tuning.pdf", bbox_inches="tight")
+plt.show()
+
+#learning curve RF + XGboost
+
+def plot_learning_curve(estimator, title, x, y):
+    train_sizes, train_scores, val_scores=learning_curve(estimator, x, y, cv=5, scoring="f1",
+    train_sizes=np.linspace(0.1, 1.0, 8),n_jobs=-1)
+
+    plt.figure(figsize=(8,6))
+    plt.plot(train_sizes, train_scores.mean(axis=1), label="Train F1")
+    plt.plot(train_sizes, val_scores.mean(axis=1), label="Validation F1")
+    plt.fill_between(train_sizes,
+                     train_scores.mean(axis=1) - train_scores.std(axis=1),
+                     train_scores.mean(axis=1) + train_scores.std(axis=1), alpha=0.1)
+    plt.fill_between(train_sizes,
+                     val_scores.mean(axis=1) - val_scores.std(axis=1),
+                     val_scores.mean(axis=1) + val_scores.std(axis=1), alpha=0.1)
+    plt.title(f"Learning curve - {title}")
+    plt.xlabel("Training samples")
+    plt.ylabel("F1 score")
+    plt.legend()
+    plt.savefig(f"../plots/learning_curve_{title}pdf", bbox_inches="tight")
+    plt.show()
+
+plot_learning_curve(best_rf, "Random Forest", x, y)
+plot_learning_curve(best_xgb, "XGBoost", x, y)
 
 rezultate = {
     "Logistic Regression": accuracy_score(y_test, pred_log),
