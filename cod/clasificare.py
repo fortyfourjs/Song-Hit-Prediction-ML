@@ -22,6 +22,7 @@ from scipy.stats import randint
 from sklearn.model_selection import cross_validate
 from sklearn.metrics import precision_recall_curve
 from sklearn.model_selection import learning_curve
+from sklearn.metrics import roc_auc_score, matthews_corrcoef
 os.makedirs("../plots", exist_ok=True)
 
 
@@ -341,6 +342,17 @@ def plot_learning_curve(estimator, title, x, y):
 
 plot_learning_curve(best_rf, "Random Forest", x, y)
 plot_learning_curve(best_xgb, "XGBoost", x, y)
+
+#AUC + MCC
+print("\n=== AUC ===")
+for name, clf in [("LR", best_lr), ("RF", best_rf), ("KNN", best_knn), ("XGB", best_xgb)]:
+    proba = clf.predic_proba(x_test)[:, 1]
+    print(f"{name} AUC: {roc_auc_score(y_test, proba):.3f}")
+
+print("\n=== Matthews Correlation coefficient ===")
+for name, pred in [("LR", pred_log), ("RF", pred_rf), ("KNN", pred_knn), ("SVM", pred_svm), ("XGB", pred_xgb)]:
+    print(f"{name} MCC: {matthews_corrcoef(y_test, pred):.3f}")
+
 
 rezultate = {
     "Logistic Regression": accuracy_score(y_test, pred_log),
