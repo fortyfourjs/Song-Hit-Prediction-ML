@@ -147,7 +147,7 @@ plt.axvline(0, color="red", linestyle="--")
 plt.xlabel("Residual")
 plt.ylabel("Count")
 plt.title("Distributia reziduurilor - XGBoost")
-plt.savefig("../plots_regresie/residuals.pdf", bbox_inches="tight")
+plt.savefig("../plots_regresie/residuals_distribution.pdf", bbox_inches="tight")
 plt.show()
 
 #feature importance
