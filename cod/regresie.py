@@ -109,14 +109,6 @@ plt.title("Residual Plot-XGBoost")
 plt.savefig("../plots_regresie/residuals.pdf", bbox_inches="tight")
 plt.show()
 
-#chart modele
-rezultate_df = pd.DataFrame(rezultate)
-rezultate_df.plot(x="Model", y=["MAE", "RMSE"], kind="bar", figsize=(10,5))
-plt.title("MAE VS RMSE - Comparatie")
-plt.tight_layout()
-plt.savefig("../plots_regresie/mae_rmse_comparatie.pdf", bbox_inches="tight")
-plt.show()
-
 #MAE RMSE comparatie
 model_name = ["Linear Regression", "Ridge", "Random Forest", "KNN", "XGBoost"]
 mae_scores = [mean_absolute_error(y_test, p) for p in [pred_lr, pred_ridge, pred_rf, pred_knn, pred_xgb]]
@@ -145,4 +137,25 @@ plt.title("R2 Score Comparatie")
 plt.axvline(0, color="red", linestyle="--")
 plt.tight_layout()
 plt.savefig("../plots_regresie/r2_comparatie.pdf", bbox_inches="tight")
+plt.show()
+
+#residual distribution
+residuals = y_test - pred_xgb
+plt.figure(figsize=(8,5))
+plt.hist(residuals, bins=50, color="mediumpurple", edgecolor="white")
+plt.axvline(0, color="red", linestyle="--")
+plt.xlabel("Residual")
+plt.ylabel("Count")
+plt.title("Distributia reziduurilor - XGBoost")
+plt.savefig("../plots_regresie/residuals.pdf", bbox_inches="tight")
+plt.show()
+
+#feature importance
+importance = xgb.feature_importances_
+indices = np.argsort(importance)
+plt.figure(figsize=(8,6))
+plt.barh(range(len(indices)), importance[indices], color="darkorange")
+plt.yticks(range(len(indices)), [features[i] for i in indices])
+plt.title("Feature importances - XGBoost Regressor")
+plt.savefig("../plots_regresie/feature_importances.pdf", bbox_inches="tight")
 plt.show()
