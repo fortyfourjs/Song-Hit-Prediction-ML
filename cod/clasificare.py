@@ -247,7 +247,7 @@ pipe_xgb = Pipeline([
 #Cross validation pe x(date initiale)
 print("\n===Cross Validation(5fold)===")
 for name, pipe in [("LR", pipe_lr), ("RF",pipe_rf), ("KNN", pipe_knn), ("SVM", pipe_svm), ("XGB", pipe_xgb)]:
-    results = cross_val_score(pipe, x, y, cv=5, scoring=["f1", "accuracy"], n_jobs=-1)
+    results = cross_validate(pipe, x, y, cv=5, scoring=["f1", "accuracy"], n_jobs=-1)
     f1 = results["test_f1"].mean()
     accuracy = results["test_accuracy"].mean()
     print(f"{name}: Accuracy={accuracy:.3f} F1={f1:.3f}")
