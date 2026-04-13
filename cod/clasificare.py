@@ -337,7 +337,7 @@ def plot_learning_curve(estimator, title, x, y):
     plt.xlabel("Training samples")
     plt.ylabel("F1 score")
     plt.legend()
-    plt.savefig(f"../plots/learning_curve_{title}pdf", bbox_inches="tight")
+    plt.savefig(f"../plots/learning_curve_{title}.pdf", bbox_inches="tight")
     plt.show()
 
 plot_learning_curve(best_rf, "Random Forest", x, y)
@@ -346,7 +346,7 @@ plot_learning_curve(best_xgb, "XGBoost", x, y)
 #AUC + MCC
 print("\n=== AUC ===")
 for name, clf in [("LR", best_lr), ("RF", best_rf), ("KNN", best_knn), ("XGB", best_xgb)]:
-    proba = clf.predic_proba(x_test)[:, 1]
+    proba = clf.predict_proba(x_test)[:, 1]
     print(f"{name} AUC: {roc_auc_score(y_test, proba):.3f}")
 
 print("\n=== Matthews Correlation coefficient ===")
