@@ -1,4 +1,4 @@
-
+import os
 import pandas as pd
 import seaborn as sns
 import matplotlib.pyplot as plt
@@ -19,6 +19,9 @@ from sklearn.metrics import RocCurveDisplay #roc
 from sklearn.svm import LinearSVC
 from xgboost import XGBClassifier
 from scipy.stats import randint
+from sklearn.model_selection import cross_validate
+
+os.makedirs("../plots", exist_ok=True)
 
 
 
@@ -54,6 +57,7 @@ df["hit"] = (df["popularity"] >= threshold).astype(int)
 y = df["hit"]
 sns.countplot(x=df["hit"])
 plt.title("hit vs non hit distribution")
+plt.savefig("../plots/hit_non_hit_distribution.pdf", dpi=300, bbox_inches="tight")
 plt.show()
 
 print("Hit threshold:", threshold)
@@ -121,6 +125,7 @@ cm = confusion_matrix(y_test, pred_rf)
 disp = ConfusionMatrixDisplay(confusion_matrix=cm)
 disp.plot()
 plt.title("Confusion Matrix Random Forest")
+plt.savefig("../plots/cm_random_forest.pdf", dpi=300, bbox_inches="tight")
 plt.show()
 print("\n === RF classification report ===")
 print(classification_report(y_test, pred_rf))
@@ -149,6 +154,7 @@ cm_knn = confusion_matrix(y_test, pred_knn)
 disp_knn = ConfusionMatrixDisplay(confusion_matrix=cm_knn)
 disp_knn.plot()
 plt.title("Confusion Matrix KNN")
+plt.savefig("../plots/cm_KNN.pdf", dpi=300, bbox_inches="tight")
 plt.show()
 print("\n === KNN classification report ===")
 print(classification_report(y_test, pred_knn))
@@ -177,6 +183,7 @@ cm_svm = confusion_matrix(y_test, pred_svm)
 disp_svm = ConfusionMatrixDisplay(confusion_matrix=cm_svm)
 disp_svm.plot()
 plt.title("Confusion Matrix SVM")
+plt.savefig("../plots/cm_SVM.pdf", dpi=300, bbox_inches="tight")
 plt.show()
 print("\n === SVM classification report ===")
 print(classification_report(y_test, pred_svm))
@@ -210,6 +217,7 @@ cm_xgb = confusion_matrix(y_test, pred_xgb)
 disp_xgb = ConfusionMatrixDisplay(confusion_matrix=cm_xgb)
 disp_xgb.plot()
 plt.title("Confusion Matrix XGBoost")
+plt.savefig("../plots/cm_XGBoost.pdf", dpi=300, bbox_inches="tight")
 plt.show()
 
 print("\n === XGBoost classification report ===")
@@ -239,8 +247,10 @@ pipe_xgb = Pipeline([
 #Cross validation pe x(date initiale)
 print("\n===Cross Validation(5fold)===")
 for name, pipe in [("LR", pipe_lr), ("RF",pipe_rf), ("KNN", pipe_knn), ("SVM", pipe_svm), ("XGB", pipe_xgb)]:
-    scores = cross_val_score(pipe, x, y, cv=5, scoring="f1", n_jobs=-1)
-    print(f"{name}: {scores.mean():.3f} (+/- {scores.std():.3f})")
+    results = cross_val_score(pipe, x, y, cv=5, scoring=["f1", "accuracy"], n_jobs=-1)
+    f1 = results["test_f1"].mean()
+    accuracy = results["test_accuracy"].mean()
+    print(f"{name}: Accuracy={accuracy:.3f} F1={f1:.3f}")
 
 #importanta proprietati random forest
 importance = best_rf.feature_importances_
@@ -250,6 +260,7 @@ plt.figure(figsize=(8,6))
 plt.barh(range(len(indices)), importance[indices], align='center')
 plt.yticks(range(len(indices)), [features[i] for i in indices])
 plt.title("Feature importances")
+plt.savefig("../plots/feature_importance.pdf", dpi=300, bbox_inches="tight")
 plt.show()
 
 #Visualization
@@ -262,6 +273,7 @@ sns.histplot(df["popularity"], bins=50, ax=axes[1], log_scale=True)
 axes[1].set_title("Popularity distribution")
 
 plt.tight_layout()
+plt.savefig("../plots/correlation_popularity_distribution.pdf", dpi=300, bbox_inches="tight")
 plt.show()
 
 #coeficienti logistic regression
@@ -270,6 +282,7 @@ plt.figure(figsize=(8,6))
 plt.barh(features, coef)
 plt.title("Coeficienti Logistic Regression")
 plt.xlabel("Impact on hit probability")
+plt.savefig("../plots/coef_logistic_regression.pdf", dpi=300, bbox_inches="tight")
 plt.show()
 
 #ROC Curve
@@ -283,6 +296,7 @@ for name, clf, pred in [
 ]:
     RocCurveDisplay.from_estimator(clf, x_test, y_test, ax=ax, name=name)
 plt.title("ROC Curve - Comparatie modele")
+plt.savefig("../plots/ROC_curve.pdf", dpi=300, bbox_inches="tight")
 plt.show()
 
 rezultate = {
@@ -299,10 +313,11 @@ plt.xlim(0.5, 1.0)
 plt.xlabel("Precizie")
 plt.title("Comparatie modele - Precizie")
 plt.tight_layout()
+plt.savefig("../plots/Comparatie_modele_precizie.pdf", dpi=300, bbox_inches="tight")
 plt.show()
 
 
-print("\nComparatie lr vs rf vs knn vs svm:")
+print("\nComparatie lr vs rf vs knn vs svm vs XGBoost:")
 print(f"Logistic regression:{accuracy_score(y_test, pred_log):.3f}")
 print(f"Random Forest:{accuracy_score(y_test, pred_rf):.3f}")
 print(f"KNN:{accuracy_score(y_test, pred_knn):.3f}")
