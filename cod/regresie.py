@@ -65,23 +65,21 @@ rezultate = [evaluare("Linear Regression", y_test, pred_lr)]
 #Ridge baseline
 ridge = Ridge(alpha=1.0)
 ridge.fit(x_train, y_train)
-pred_ridge = ridge.predict(x_test)
-rezultate.append(evaluare("Ridge", y_test, pred_ridge))
+pred_ridge_base = ridge.predict(x_test)
+rezultate.append(evaluare("Ridge (base)", y_test, pred_ridge_base))
 
-#Ridge hypertuned
-'''
-ridge_param_grid = {"alpha": [0.01, 0.1, 1.0, 10, 100]}
-ridge_grid = GridSearchCV(
-    Ridge(),
-    ridge_param_grid,
-    cv=5, scoring="neg_root_mean_squared_error", n_jobs=-1,verbose=1
-)
+ridge_param_grid = {
+    "alpha": [0.01, 0.1, 1.0, 10, 100]
+}
+ridge_grid = GridSearchCV(Ridge(), ridge_param_grid,
+                          cv=5, scoring="neg_root_mean_squared_error", n_jobs=-1, verbose=1)
 ridge_grid.fit(x_train, y_train)
 print("Best Ridge params:", ridge_grid.best_params_)
 best_ridge = ridge_grid.best_estimator_
-pred_ridge = best_ridge.predict(x_test)
-rezultate.append(evaluare("Ridge(tuned)", y_test, pred_ridge))
-'''
+pred_ridge_tuned = best_ridge.predict(x_test)
+rezultate.append(evaluare("Ridge (tuned)", y_test, pred_ridge_tuned))
+
+
 
 #Random Forest Regressor
 rf = RandomForestRegressor(n_estimators=100, random_state=42, n_jobs=-1)
