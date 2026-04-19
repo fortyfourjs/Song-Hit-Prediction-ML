@@ -117,15 +117,15 @@ print("\n===RF (Base) ===")
 print(classification_report(y_test, pred_rf_base))
 
 rf_param_grid = {
-    "n_estimators": [100, 200, 300], #add 300 for proper grid
-    "max_depth": [None, 10, 20, 30], #add 30 for proper grid
+    "n_estimators": [100, 200, 300],
+    "max_depth": [None, 10, 20, 30],
     "min_samples_split": [2, 5, 10],
-    "min_samples_leaf": [1, 2, 4] #add 4 for proper grid
+    "min_samples_leaf": [1, 2, 4]
 }
 rf_grid = GridSearchCV(
     RandomForestClassifier(class_weight="balanced", random_state=42, n_jobs=-1),
     rf_param_grid,
-    cv=3, #change 3 to 5 for 5 folds, 3 is performance only goes from 540 fits to 108
+    cv=5,
     scoring="f1",
     n_jobs=-1,
     verbose=1
@@ -235,8 +235,8 @@ xgb_param_dist = {
 xgb_rand = RandomizedSearchCV(
     XGBClassifier(scale_pos_weight=ratio, eval_metric="logloss", random_state=42, n_jobs=-1),
     xgb_param_dist,
-    n_iter=15, #change to 30 for proper grid
-    cv=3, #change to 5, goes from 150 fits to 45
+    n_iter=30,
+    cv=5,
     scoring="f1",
     n_jobs=-1,
     verbose=1,
@@ -413,7 +413,7 @@ print(f"SVM:{accuracy_score(y_test, pred_svm_tuned):.3f}")
 print(f"XGBoost:{accuracy_score(y_test, pred_xgb_tuned):.3f}")
 
 #tabel comparatie base vs tuned
-print(f"\n{'Model':<20} {'Acc base':>10} {'Acc tuned':>10} {'F1 base':>10} {'F1 tuned':>!0}")
+print(f"\n{'Model':<20} {'Acc base':>10} {'Acc tuned':>10} {'F1 base':>10} {'F1 tuned':>10}")
 print("-" * 60)
 
 model = ["LR", "RF", "KNN", "SVM", "XGB"]

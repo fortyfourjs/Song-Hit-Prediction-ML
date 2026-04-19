@@ -247,5 +247,5 @@ for name, model in [
 ]:
     pipe = Pipeline([("scaler", StandardScaler()), ("model", model)])
     scores = cross_val_score(pipe, df[features], df["popularity"],
-                             cv=5, scoring="neg_mean_squared_error", n_jobs=-1)
+                             cv=5, scoring="neg_root_mean_squared_error", n_jobs=-1)
     print(f"{name}: RMSE={(-scores.mean()):.3f} (+/- {scores.std():.3f})")
