@@ -14,6 +14,8 @@ from sklearn.model_selection import GridSearchCV
 from xgboost import XGBRegressor
 from scipy.stats import randint
 from sklearn.model_selection import RandomizedSearchCV
+from sklearn.pipeline import Pipeline
+
 os.makedirs("../plots_regresie", exist_ok=True)
 
 #Incarcare set de date
@@ -233,3 +235,17 @@ for name, base, tuned in zip(model, baseline_preds, tuned_preds):
           f"{np.sqrt(mean_squared_error(y_test, tuned)):>10.3f}"
           f"{r2_score(y_test, base):>8.3f}"
           f"{r2_score(y_test, tuned):>8.3f}")
+
+print("\n=== Cross Validation Regresie 5fold ===")
+for name, model in [
+    ("Linear Regression", lr),
+    ("Ridge", best_ridge),
+    ("Random Forest", best_rf),
+    ("KNN", best_knn),
+    ("XGBoost", best_xgb),
+
+]:
+    pipe = Pipeline([("scaler", StandardScaler()), ("model", model)])
+    scores = cross_val_score(pipe, df[features], df["popularity"],
+                             cv=5, scoring="neg_mean_squared_error", n_jobs=-1)
+    print(f"{name}: RMSE={(-scores.mean()):.3f} (+/- {scores.std():.3f})")

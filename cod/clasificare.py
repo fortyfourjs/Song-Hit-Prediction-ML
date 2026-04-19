@@ -23,6 +23,8 @@ from sklearn.model_selection import cross_validate
 from sklearn.metrics import precision_recall_curve
 from sklearn.model_selection import learning_curve
 from sklearn.metrics import roc_auc_score, matthews_corrcoef
+from sklearn.metrics import f1_score
+
 os.makedirs("../plots", exist_ok=True)
 
 
@@ -78,6 +80,12 @@ print(f"scale_pos_weight este: {ratio:.2f}")
 
 
 #Logistic Regression
+lr_base = LogisticRegression(max_iter=1000, class_weight="balanced")
+lr_base.fit(x_train, y_train)
+pred_log_base = lr_base.predict(x_test)
+print("\n==LR (base) ===")
+print(classification_report(y_test, pred_log_base))
+
 lr_param_grid = {
     "C": [0.01, 0.1, 1, 10, 100],
     "solver": ["lbfgs", "liblinear"],
@@ -95,13 +103,19 @@ lr_grid.fit(x_train, y_train)
 print("Best LR Params:", lr_grid.best_params_)
 
 best_lr = lr_grid.best_estimator_
-pred_log = best_lr.predict(x_test)
+pred_log_tuned = best_lr.predict(x_test)
 
 print("\n === LR classification report ===")
-print(classification_report(y_test, pred_log))
+print(classification_report(y_test, pred_log_tuned))
 
 
 #Random Forest
+rf_base = RandomForestClassifier(n_estimators=100, random_state=42, class_weight="balanced", n_jobs=-1)
+rf_base.fit(x_train, y_train)
+pred_rf_base = rf_base.predict(x_test)
+print("\n===RF (Base) ===")
+print(classification_report(y_test, pred_rf_base))
+
 rf_param_grid = {
     "n_estimators": [100, 200, 300], #add 300 for proper grid
     "max_depth": [None, 10, 20, 30], #add 30 for proper grid
@@ -121,18 +135,24 @@ print("Best RF Params:", rf_grid.best_params_)
 print("Best RF F1 scores:", rf_grid.best_score_)
 
 best_rf = rf_grid.best_estimator_
-pred_rf = best_rf.predict(x_test)
+pred_rf_tuned = best_rf.predict(x_test)
 
-cm = confusion_matrix(y_test, pred_rf)
+cm = confusion_matrix(y_test, pred_rf_tuned)
 disp = ConfusionMatrixDisplay(confusion_matrix=cm)
 disp.plot()
 plt.title("Confusion Matrix Random Forest")
 plt.savefig("../plots/cm_random_forest.pdf", dpi=300, bbox_inches="tight")
 plt.show()
 print("\n === RF classification report ===")
-print(classification_report(y_test, pred_rf))
+print(classification_report(y_test, pred_rf_tuned))
 
 #KNN
+knn_base = KNeighborsClassifier(n_neighbors=5, n_jobs=-1)
+knn_base.fit(x_train, y_train)
+pred_knn_base = knn_base.predict(x_test)
+print("\n=== KNN (base) ===")
+print(classification_report(y_test, pred_knn_base))
+
 knn_param_grid = {
     "n_neighbors": [3, 5, 7, 11, 15, 21],
     "weights": ["uniform", "distance"],
@@ -150,19 +170,25 @@ knn_grid.fit(x_train, y_train)
 print("Best KNN params:", knn_grid.best_params_)
 
 best_knn = knn_grid.best_estimator_
-pred_knn = best_knn.predict(x_test)
+pred_knn_tuned = best_knn.predict(x_test)
 
-cm_knn = confusion_matrix(y_test, pred_knn)
+cm_knn = confusion_matrix(y_test, pred_knn_tuned)
 disp_knn = ConfusionMatrixDisplay(confusion_matrix=cm_knn)
 disp_knn.plot()
 plt.title("Confusion Matrix KNN")
 plt.savefig("../plots/cm_KNN.pdf", dpi=300, bbox_inches="tight")
 plt.show()
 print("\n === KNN classification report ===")
-print(classification_report(y_test, pred_knn))
+print(classification_report(y_test, pred_knn_tuned))
 
 
 #SVM
+svm_base = LinearSVC(class_weight="balanced", max_iter=2000)
+svm_base.fit(x_train, y_train)
+pred_svm_base = svm_base.predict(x_test)
+print("\n=== SVM (base) ===")
+print(classification_report(y_test, pred_svm_base))
+
 svm_param_grid = {
     "C": [0.01, 0.1, 1, 10],
     "max_iter": [2000]
@@ -179,18 +205,25 @@ svm_grid.fit(x_train, y_train)
 print("Best SVM params:", svm_grid.best_params_)
 
 best_svm = svm_grid.best_estimator_
-pred_svm = best_svm.predict(x_test)
+pred_svm_tuned = best_svm.predict(x_test)
 
-cm_svm = confusion_matrix(y_test, pred_svm)
+cm_svm = confusion_matrix(y_test, pred_svm_tuned)
 disp_svm = ConfusionMatrixDisplay(confusion_matrix=cm_svm)
 disp_svm.plot()
 plt.title("Confusion Matrix SVM")
 plt.savefig("../plots/cm_SVM.pdf", dpi=300, bbox_inches="tight")
 plt.show()
 print("\n === SVM classification report ===")
-print(classification_report(y_test, pred_svm))
+print(classification_report(y_test, pred_svm_tuned))
 
 #XGBoost
+xgb_base = XGBClassifier(n_estimators=200, learning_rate=0.1, max_depth=6,
+                         scale_pos_weight=ratio, eval_metric="logloss",random_state=42, n_jobs=-1)
+xgb_base.fit(x_train, y_train)
+pred_xgb_base = xgb_base.predict(x_test)
+print("\n=== XGB (base) ===")
+print(classification_report(y_test, pred_xgb_base))
+
 xgb_param_dist = {
     "n_estimators": randint(100, 400),
     "max_depth": randint(3, 10),
@@ -213,9 +246,9 @@ xgb_rand.fit(x_train, y_train)
 print("Best XGBoost params:", xgb_rand.best_params_)
 
 best_xgb = xgb_rand.best_estimator_
-pred_xgb =best_xgb.predict(x_test)
+pred_xgb_tuned =best_xgb.predict(x_test)
 
-cm_xgb = confusion_matrix(y_test, pred_xgb)
+cm_xgb = confusion_matrix(y_test, pred_xgb_tuned)
 disp_xgb = ConfusionMatrixDisplay(confusion_matrix=cm_xgb)
 disp_xgb.plot()
 plt.title("Confusion Matrix XGBoost")
@@ -223,7 +256,7 @@ plt.savefig("../plots/cm_XGBoost.pdf", dpi=300, bbox_inches="tight")
 plt.show()
 
 print("\n === XGBoost classification report ===")
-print(classification_report(y_test, pred_xgb))
+print(classification_report(y_test, pred_xgb_tuned))
 
 pipe_lr = Pipeline([
     ("scaler", StandardScaler()),
@@ -290,11 +323,11 @@ plt.show()
 #ROC Curve
 fig, ax = plt.subplots(figsize=(8,6))
 for name, clf, pred in [
-    ("Logistic Regression", best_lr, pred_log),
-    ("Random Forest", best_rf, pred_rf),
-    ("KNN", best_knn, pred_knn),
+    ("Logistic Regression", best_lr, pred_log_tuned),
+    ("Random Forest", best_rf, pred_rf_tuned),
+    ("KNN", best_knn, pred_knn_tuned),
     # ("SVM", svm, pred_svm) incompatibil roc
-    ("XGB", best_xgb, pred_xgb)
+    ("XGB", best_xgb, pred_xgb_tuned),
 ]:
     RocCurveDisplay.from_estimator(clf, x_test, y_test, ax=ax, name=name)
 plt.title("ROC Curve - Comparatie modele")
@@ -350,16 +383,16 @@ for name, clf in [("LR", best_lr), ("RF", best_rf), ("KNN", best_knn), ("XGB", b
     print(f"{name} AUC: {roc_auc_score(y_test, proba):.3f}")
 
 print("\n=== Matthews Correlation coefficient ===")
-for name, pred in [("LR", pred_log), ("RF", pred_rf), ("KNN", pred_knn), ("SVM", pred_svm), ("XGB", pred_xgb)]:
+for name, pred in [("LR", pred_log_tuned), ("RF", pred_rf_tuned), ("KNN", pred_knn_tuned), ("SVM", pred_svm_tuned), ("XGB", pred_xgb_tuned)]:
     print(f"{name} MCC: {matthews_corrcoef(y_test, pred):.3f}")
 
 
 rezultate = {
-    "Logistic Regression": accuracy_score(y_test, pred_log),
-    "Random Forest": accuracy_score(y_test, pred_rf),
-    "KNN": accuracy_score(y_test, pred_knn),
-    "SVM": accuracy_score(y_test, pred_svm),
-    "XGBoost": accuracy_score(y_test, pred_xgb)
+    "Logistic Regression": accuracy_score(y_test, pred_log_tuned),
+    "Random Forest": accuracy_score(y_test, pred_rf_tuned),
+    "KNN": accuracy_score(y_test, pred_knn_tuned),
+    "SVM": accuracy_score(y_test, pred_svm_tuned),
+    "XGBoost": accuracy_score(y_test, pred_xgb_tuned)
 }
 
 plt.figure(figsize=(8,6))
@@ -373,8 +406,23 @@ plt.show()
 
 
 print("\nComparatie lr vs rf vs knn vs svm vs XGBoost:")
-print(f"Logistic regression:{accuracy_score(y_test, pred_log):.3f}")
-print(f"Random Forest:{accuracy_score(y_test, pred_rf):.3f}")
-print(f"KNN:{accuracy_score(y_test, pred_knn):.3f}")
-print(f"SVM:{accuracy_score(y_test, pred_svm):.3f}")
-print(f"XGBoost:{accuracy_score(y_test, pred_xgb):.3f}")
+print(f"Logistic regression:{accuracy_score(y_test, pred_log_tuned):.3f}")
+print(f"Random Forest:{accuracy_score(y_test, pred_rf_tuned):.3f}")
+print(f"KNN:{accuracy_score(y_test, pred_knn_tuned):.3f}")
+print(f"SVM:{accuracy_score(y_test, pred_svm_tuned):.3f}")
+print(f"XGBoost:{accuracy_score(y_test, pred_xgb_tuned):.3f}")
+
+#tabel comparatie base vs tuned
+print(f"\n{'Model':<20} {'Acc base':>10} {'Acc tuned':>10} {'F1 base':>10} {'F1 tuned':>!0}")
+print("-" * 60)
+
+model = ["LR", "RF", "KNN", "SVM", "XGB"]
+base_preds = [pred_log_base, pred_rf_base, pred_knn_base, pred_svm_base, pred_xgb_base]
+tuned_preds = [pred_log_tuned, pred_rf_tuned, pred_knn_tuned, pred_svm_tuned, pred_xgb_tuned]
+
+for name, base, tuned in zip(model, base_preds, tuned_preds):
+    print(f"{name:<20}"
+          f"{accuracy_score(y_test, base):>10.3f}"
+          f"{accuracy_score(y_test, tuned):>10.3f}"
+          f"{f1_score(y_test, base):>10.3f}"
+          f"{f1_score(y_test, tuned):>10.3f}")
