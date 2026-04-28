@@ -24,18 +24,15 @@ from sklearn.metrics import precision_recall_curve
 from sklearn.model_selection import learning_curve
 from sklearn.metrics import roc_auc_score, matthews_corrcoef
 from sklearn.metrics import f1_score
-
-os.makedirs("../plots", exist_ok=True)
-
-
+os.makedirs("../figuri_clasificare", exist_ok=True)
 
 #Incarcare set de date
 df = pd.read_csv("../data/spotify_dataset.csv")
 df = df.dropna().copy()
 df = df.drop_duplicates(subset=["track_id"])
-print(f"Shape dupa deduplicare: {df.shape}")
+print(f"Dimensiune dupa eliminarea duplicatelor: {df.shape}")
 
-features = ["danceability",
+caracteristici = ["danceability",
             "energy",
             "loudness",
             "speechiness",
@@ -49,25 +46,26 @@ features = ["danceability",
             "key",
             "mode",
             "time_signature"]
-x = df[features]
+x = df[caracteristici]
 
 print("Set incarcat")
 print(df.shape)
 print(df.head())
 
-#target variable
+#variabila target
 threshold = df["popularity"].quantile(0.75)
 df["hit"] = (df["popularity"] >= threshold).astype(int)
 y = df["hit"]
+
 sns.countplot(x=df["hit"])
-plt.title("hit vs non hit distribution")
-plt.savefig("../plots/hit_non_hit_distribution.pdf", dpi=300, bbox_inches="tight")
+plt.title("Distributie hituri vs non hituri")
+plt.savefig("../figuri_clasificare/distributie_hit_non_hit.pdf", dpi=300, bbox_inches="tight")
 plt.show()
 
-print("Hit threshold:", threshold)
+print("Prag popularitate(top 25%):", threshold)
 print(df["hit"].value_counts())
 
-#train/test split 80/20 + scalare
+#train/test 80/20 + scalare
 x_train, x_test, y_train, y_test = train_test_split(x,y,test_size = 0.2, random_state = 42)
 scaler = StandardScaler()
 x_train = scaler.fit_transform(x_train)
@@ -75,156 +73,157 @@ x_test = scaler.transform(x_test)
 
 neg = (y_train == 0).sum()
 pos = (y_train == 1).sum()
-ratio = neg / pos
-print(f"scale_pos_weight este: {ratio:.2f}")
+raport = neg / pos
+print(f"Raport clase: {raport:.2f}")
 
 
-#Logistic Regression
-lr_base = LogisticRegression(max_iter=1000, class_weight="balanced")
-lr_base.fit(x_train, y_train)
-pred_log_base = lr_base.predict(x_test)
-print("\n==LR (base) ===")
-print(classification_report(y_test, pred_log_base))
+#Regresie logistica
+rl_normal = LogisticRegression(max_iter=1000, class_weight="balanced")
+rl_normal.fit(x_train, y_train)
+pred_rl_normal = rl_normal.predict(x_test)
+print("\n== Regresie Logistica(varianta normala) ===")
+print(classification_report(y_test, pred_rl_normal))
 
-lr_param_grid = {
+rl_parametri = {
     "C": [0.01, 0.1, 1, 10, 100],
     "solver": ["lbfgs", "liblinear"],
     "penalty": ["l2"]
 }
-lr_grid = GridSearchCV(
+rl_cautare = GridSearchCV(
     LogisticRegression(max_iter=1000, class_weight="balanced"),
-    lr_param_grid,
+    rl_parametri,
     cv=5,
     scoring="f1",
     n_jobs=-1,
     verbose=1
 )
-lr_grid.fit(x_train, y_train)
-print("Best LR Params:", lr_grid.best_params_)
+rl_cautare.fit(x_train, y_train)
+print("Paremtri optimi RL:", rl_cautare.best_params_)
 
-best_lr = lr_grid.best_estimator_
-pred_log_tuned = best_lr.predict(x_test)
+best_rl = rl_cautare.best_estimator_
+pred_rl_optimizat = best_rl.predict(x_test)
 
-print("\n === LR classification report ===")
-print(classification_report(y_test, pred_log_tuned))
+print("\n === Regresie Logistica(varianta optimizata) ===")
+print(classification_report(y_test, pred_rl_optimizat))
 
 
 #Random Forest
-rf_base = RandomForestClassifier(n_estimators=100, random_state=42, class_weight="balanced", n_jobs=-1)
-rf_base.fit(x_train, y_train)
-pred_rf_base = rf_base.predict(x_test)
-print("\n===RF (Base) ===")
-print(classification_report(y_test, pred_rf_base))
+rf_normal = RandomForestClassifier(n_estimators=100, random_state=42, class_weight="balanced", n_jobs=-1)
+rf_normal.fit(x_train, y_train)
+pred_rf_normal = rf_normal.predict(x_test)
+print("\n===Random Forest(varianta normala) ===")
+print(classification_report(y_test, pred_rf_normal))
 
-rf_param_grid = {
+rf_parametri = {
     "n_estimators": [100, 200, 300],
     "max_depth": [None, 10, 20, 30],
     "min_samples_split": [2, 5, 10],
     "min_samples_leaf": [1, 2, 4]
 }
-rf_grid = GridSearchCV(
+rf_cautare = GridSearchCV(
     RandomForestClassifier(class_weight="balanced", random_state=42, n_jobs=-1),
-    rf_param_grid,
+    rf_parametri,
     cv=5,
     scoring="f1",
     n_jobs=-1,
     verbose=1
 )
-rf_grid.fit(x_train, y_train)
-print("Best RF Params:", rf_grid.best_params_)
-print("Best RF F1 scores:", rf_grid.best_score_)
+rf_cautare.fit(x_train, y_train)
+print("Parametri optimi RF:", rf_cautare.best_params_)
+print("Cel mai bun scor F1:", rf_cautare.best_score_)
 
-best_rf = rf_grid.best_estimator_
-pred_rf_tuned = best_rf.predict(x_test)
+best_rf = rf_cautare.best_estimator_
+pred_rf_optimizat = best_rf.predict(x_test)
 
-cm = confusion_matrix(y_test, pred_rf_tuned)
+cm = confusion_matrix(y_test, pred_rf_optimizat)
 disp = ConfusionMatrixDisplay(confusion_matrix=cm)
 disp.plot()
-plt.title("Confusion Matrix Random Forest")
-plt.savefig("../plots/cm_random_forest.pdf", dpi=300, bbox_inches="tight")
+plt.title("Matrice de confuzie - Random Forest")
+plt.savefig("../figuri_clasificare/matrice_confuzie_random_forest.pdf", dpi=300, bbox_inches="tight")
 plt.show()
-print("\n === RF classification report ===")
-print(classification_report(y_test, pred_rf_tuned))
+print("\n === Random Forest(varianta optimizata) ===")
+print(classification_report(y_test, pred_rf_optimizat))
 
 #KNN
-knn_base = KNeighborsClassifier(n_neighbors=5, n_jobs=-1)
-knn_base.fit(x_train, y_train)
-pred_knn_base = knn_base.predict(x_test)
-print("\n=== KNN (base) ===")
-print(classification_report(y_test, pred_knn_base))
+knn_normal = KNeighborsClassifier(n_neighbors=5, n_jobs=-1)
+knn_normal.fit(x_train, y_train)
+pred_knn_normal = knn_normal.predict(x_test)
+print("\n=== KNN(varianta normala ===")
+print(classification_report(y_test, pred_knn_normal))
 
-knn_param_grid = {
+knn_parametri = {
     "n_neighbors": [3, 5, 7, 11, 15, 21],
     "weights": ["uniform", "distance"],
     "metric": ["euclidean","manhattan"]
 }
-knn_grid = GridSearchCV(
+knn_cautare = GridSearchCV(
     KNeighborsClassifier(n_jobs=-1),
-    knn_param_grid,
+    knn_parametri,
     cv=5,
     scoring="f1",
     n_jobs=-1,
     verbose=1
 )
-knn_grid.fit(x_train, y_train)
-print("Best KNN params:", knn_grid.best_params_)
+knn_cautare.fit(x_train, y_train)
+print("Parametri optimi KNN:", knn_cautare.best_params_)
 
-best_knn = knn_grid.best_estimator_
-pred_knn_tuned = best_knn.predict(x_test)
+best_knn = knn_cautare.best_estimator_
+pred_knn_optimizat = best_knn.predict(x_test)
 
-cm_knn = confusion_matrix(y_test, pred_knn_tuned)
+cm_knn = confusion_matrix(y_test, pred_knn_optimizat)
 disp_knn = ConfusionMatrixDisplay(confusion_matrix=cm_knn)
 disp_knn.plot()
-plt.title("Confusion Matrix KNN")
-plt.savefig("../plots/cm_KNN.pdf", dpi=300, bbox_inches="tight")
+plt.title("Matrice de confuzie - KNN")
+plt.savefig("../figuri_clasificare/matrice_confuzie_KNN.pdf", dpi=300, bbox_inches="tight")
 plt.show()
-print("\n === KNN classification report ===")
-print(classification_report(y_test, pred_knn_tuned))
+print("\n === KNN(varianta optimizata) ===")
+print(classification_report(y_test, pred_knn_optimizat))
 
 
 #SVM
-svm_base = LinearSVC(class_weight="balanced", max_iter=2000)
-svm_base.fit(x_train, y_train)
-pred_svm_base = svm_base.predict(x_test)
-print("\n=== SVM (base) ===")
-print(classification_report(y_test, pred_svm_base))
+svm_normal = LinearSVC(class_weight="balanced", max_iter=2000)
+svm_normal.fit(x_train, y_train)
+pred_svm_normal = svm_normal.predict(x_test)
+print("\n=== SVM(varianta normala) ===")
+print(classification_report(y_test, pred_svm_normal))
 
-svm_param_grid = {
+svm_parametri = {
     "C": [0.01, 0.1, 1, 10],
     "max_iter": [2000]
 }
-svm_grid = GridSearchCV(
+svm_cautare = GridSearchCV(
     LinearSVC(class_weight="balanced"),
-    svm_param_grid,
+    svm_parametri,
     cv=5,
     scoring="f1",
     n_jobs=-1,
     verbose=1
 )
-svm_grid.fit(x_train, y_train)
-print("Best SVM params:", svm_grid.best_params_)
+svm_cautare.fit(x_train, y_train)
+print("Parametri optimi SVM:", svm_cautare.best_params_)
 
-best_svm = svm_grid.best_estimator_
-pred_svm_tuned = best_svm.predict(x_test)
+best_svm = svm_cautare.best_estimator_
+pred_svm_optimizat = best_svm.predict(x_test)
 
-cm_svm = confusion_matrix(y_test, pred_svm_tuned)
+cm_svm = confusion_matrix(y_test, pred_svm_optimizat)
 disp_svm = ConfusionMatrixDisplay(confusion_matrix=cm_svm)
 disp_svm.plot()
-plt.title("Confusion Matrix SVM")
-plt.savefig("../plots/cm_SVM.pdf", dpi=300, bbox_inches="tight")
+plt.title("Matrice de confuzie - SVM")
+plt.savefig("../figuri_clasificare/matrice_confuzie_SVM.pdf", dpi=300, bbox_inches="tight")
 plt.show()
-print("\n === SVM classification report ===")
-print(classification_report(y_test, pred_svm_tuned))
+print("\n === SVM(varianta optimizata) ===")
+print(classification_report(y_test, pred_svm_optimizat))
+
 
 #XGBoost
-xgb_base = XGBClassifier(n_estimators=200, learning_rate=0.1, max_depth=6,
-                         scale_pos_weight=ratio, eval_metric="logloss",random_state=42, n_jobs=-1)
-xgb_base.fit(x_train, y_train)
-pred_xgb_base = xgb_base.predict(x_test)
-print("\n=== XGB (base) ===")
-print(classification_report(y_test, pred_xgb_base))
+xgb_normal = XGBClassifier(n_estimators=200, learning_rate=0.1, max_depth=6,
+                         scale_pos_weight=raport, eval_metric="logloss",random_state=42, n_jobs=-1)
+xgb_normal.fit(x_train, y_train)
+pred_xgb_normal = xgb_normal.predict(x_test)
+print("\n=== XGB(varianta normala) ===")
+print(classification_report(y_test, pred_xgb_normal))
 
-xgb_param_dist = {
+xgb_parametri = {
     "n_estimators": randint(100, 400),
     "max_depth": randint(3, 10),
     "learning_rate": [0.01, 0.05, 0.1, 0.2],
@@ -233,8 +232,8 @@ xgb_param_dist = {
 
 }
 xgb_rand = RandomizedSearchCV(
-    XGBClassifier(scale_pos_weight=ratio, eval_metric="logloss", random_state=42, n_jobs=-1),
-    xgb_param_dist,
+    XGBClassifier(scale_pos_weight=raport, eval_metric="logloss", random_state=42, n_jobs=-1),
+    xgb_parametri,
     n_iter=30,
     cv=5,
     scoring="f1",
@@ -243,24 +242,24 @@ xgb_rand = RandomizedSearchCV(
     random_state=42
 )
 xgb_rand.fit(x_train, y_train)
-print("Best XGBoost params:", xgb_rand.best_params_)
+print("Parametri optimi XGB:", xgb_rand.best_params_)
 
 best_xgb = xgb_rand.best_estimator_
-pred_xgb_tuned =best_xgb.predict(x_test)
+pred_xgb_optimizat =best_xgb.predict(x_test)
 
-cm_xgb = confusion_matrix(y_test, pred_xgb_tuned)
+cm_xgb = confusion_matrix(y_test, pred_xgb_optimizat)
 disp_xgb = ConfusionMatrixDisplay(confusion_matrix=cm_xgb)
 disp_xgb.plot()
-plt.title("Confusion Matrix XGBoost")
-plt.savefig("../plots/cm_XGBoost.pdf", dpi=300, bbox_inches="tight")
+plt.title("Matrice de confuzie - XGBoost")
+plt.savefig("../figuri_clasificare/matrice_confuzie_XGBoost.pdf", dpi=300, bbox_inches="tight")
 plt.show()
 
-print("\n === XGBoost classification report ===")
-print(classification_report(y_test, pred_xgb_tuned))
+print("\n === XGBoost(varianta optimizata) ===")
+print(classification_report(y_test, pred_xgb_optimizat))
 
-pipe_lr = Pipeline([
+pipe_rl = Pipeline([
     ("scaler", StandardScaler()),
-    ("model", best_lr)
+    ("model", best_rl)
 ])
 pipe_rf = Pipeline([
     ("scaler", StandardScaler()),
@@ -279,150 +278,148 @@ pipe_xgb = Pipeline([
     ("model", best_xgb)
 ])
 
-#Cross validation pe x(date initiale)
-print("\n===Cross Validation(5fold)===")
-for name, pipe in [("LR", pipe_lr), ("RF",pipe_rf), ("KNN", pipe_knn), ("SVM", pipe_svm), ("XGB", pipe_xgb)]:
-    results = cross_validate(pipe, x, y, cv=5, scoring=["f1", "accuracy"], n_jobs=-1)
-    f1 = results["test_f1"].mean()
-    accuracy = results["test_accuracy"].mean()
-    print(f"{name}: Accuracy={accuracy:.3f} F1={f1:.3f}")
+#Validare incrucisata pe x(date initiale)
+print("\n===Validare incrucisata(5fold)===")
+for nume, pipe in [("RL", pipe_rl), ("RF",pipe_rf), ("KNN", pipe_knn), ("SVM", pipe_svm), ("XGB", pipe_xgb)]:
+    rezultate = cross_validate(pipe, x, y, cv=5, scoring=["f1", "accuracy"], n_jobs=-1)
+    f1 = rezultate["test_f1"].mean()
+    acuratete = rezultate["test_accuracy"].mean()
+    print(f"{nume}: Acuratete={acuratete:.3f} F1={f1:.3f}")
 
-#importanta proprietati random forest
-importance = best_rf.feature_importances_
-indices = np.argsort(importance)
+#importanta caracteristicilor random forest
+importanta = best_rf.feature_importances_
+indici = np.argsort(importanta)
 
 plt.figure(figsize=(8,6))
-plt.barh(range(len(indices)), importance[indices], align='center')
-plt.yticks(range(len(indices)), [features[i] for i in indices])
-plt.title("Feature importances")
-plt.savefig("../plots/feature_importance.pdf", dpi=300, bbox_inches="tight")
+plt.barh(range(len(indici)), importanta[indici], align='center')
+plt.yticks(range(len(indici)), [caracteristici[i] for i in indici])
+plt.title("Importanta caracteristicilor - Random Forest")
+plt.savefig("../figuri_clasificare/importanta_caracteristici.pdf", dpi=300, bbox_inches="tight")
 plt.show()
 
-#Visualization
+#figuri
 fig, axes = plt.subplots(1,2, figsize = (16,6))
 
 sns.heatmap(df.corr(numeric_only=True), cmap="coolwarm", ax=axes[0])
-axes[0].set_title("Correlation heatmap")
+axes[0].set_title("Harta de corelatie")
 
 sns.histplot(df["popularity"], bins=50, ax=axes[1], log_scale=True)
-axes[1].set_title("Popularity distribution")
+axes[1].set_title("Dstributia popularitatii")
 
 plt.tight_layout()
-plt.savefig("../plots/correlation_popularity_distribution.pdf", dpi=300, bbox_inches="tight")
+plt.savefig("../figuri_clasificare/corelatie_distributie_popularitate.pdf", dpi=300, bbox_inches="tight")
 plt.show()
 
-#coeficienti logistic regression
-coef = best_lr.coef_[0]
+#coeficienti regresie logistica
+coef = best_rl.coef_[0]
 plt.figure(figsize=(8,6))
-plt.barh(features, coef)
-plt.title("Coeficienti Logistic Regression")
-plt.xlabel("Impact on hit probability")
-plt.savefig("../plots/coef_logistic_regression.pdf", dpi=300, bbox_inches="tight")
+plt.barh(caracteristici, coef)
+plt.title("Coeficienti Regresie Logistica")
+plt.xlabel("Impact probabilitate hit")
+plt.savefig("../figuri_clasificare/coeficienti_regresie_logistica.pdf", dpi=300, bbox_inches="tight")
 plt.show()
 
-#ROC Curve
+#Curba ROC
 fig, ax = plt.subplots(figsize=(8,6))
 for name, clf, pred in [
-    ("Logistic Regression", best_lr, pred_log_tuned),
-    ("Random Forest", best_rf, pred_rf_tuned),
-    ("KNN", best_knn, pred_knn_tuned),
-    # ("SVM", svm, pred_svm) incompatibil roc
-    ("XGB", best_xgb, pred_xgb_tuned),
+    ("Regresie Logistica", best_rl, pred_rl_optimizat),
+    ("Random Forest", best_rf, pred_rf_optimizat),
+    ("KNN", best_knn, pred_knn_optimizat),
+    ("XGB", best_xgb, pred_xgb_optimizat),
 ]:
     RocCurveDisplay.from_estimator(clf, x_test, y_test, ax=ax, name=name)
-plt.title("ROC Curve - Comparatie modele")
-plt.savefig("../plots/ROC_curve.pdf", dpi=300, bbox_inches="tight")
+plt.title("Curba ROC - Comparatie modele")
+plt.savefig("../figuri_clasificare/curba_ROC.pdf", dpi=300, bbox_inches="tight")
 plt.show()
 
-#Threshold tuning curve
-y_proba = best_xgb.predict_proba(x_test)[:, 1]
-precision, recall, thresholds = precision_recall_curve(y_test, y_proba)
-f1_scores = 2 * (precision[:-1]*recall[:-1]) / (precision[:-1]+recall[:-1] + 1e-9)
-best_thresh = thresholds[np.argmax(f1_scores)]
+#Optimiare prag decizie XGB
+probabilitati_xgb = best_xgb.predict_proba(x_test)[:, 1]
+precizie, rechemare, prag_decizie = precision_recall_curve(y_test, probabilitati_xgb)
+scor_f1 = 2 * (precizie[:-1]*rechemare[:-1]) / (precizie[:-1]+rechemare[:-1] + 1e-9)
+prag_decizie_optim = prag_decizie[np.argmax(scor_f1)]
 
 plt.figure(figsize=(8,6))
-plt.plot(thresholds, precision[:-1], label="Precision")
-plt.plot(thresholds, recall[:-1], label="Recall")
-plt.plot(thresholds, f1_scores, label="F1")
-plt.axvline(best_thresh, color="red", linestyle="--", label=f"Best: {best_thresh:.2f}")
-plt.xlabel("Threshold")
-plt.title("Threshold Tuning - XGBoost")
+plt.plot(prag_decizie, precizie[:-1], label="Precizie")
+plt.plot(prag_decizie, rechemare[:-1], label="Rechemare")
+plt.plot(prag_decizie, scor_f1, label="F1")
+plt.axvline(prag_decizie_optim, color="red", linestyle="--", label=f"Prag de decizie optim: {prag_decizie_optim:.2f}")
+plt.xlabel("Prag de decizie")
+plt.title("Optimizare prag de decizie - XGBoost")
 plt.legend()
-plt.savefig("../plots/threshold_tuning.pdf", bbox_inches="tight")
+plt.savefig("../figuri_clasificare/optimizare_prag_decizie.pdf", bbox_inches="tight")
 plt.show()
 
-#learning curve RF + XGboost
+#curbe invatare RF, XGBoost
 
-def plot_learning_curve(estimator, title, x, y):
+def plot_curba_invatare(estimator, title, x, y):
     train_sizes, train_scores, val_scores=learning_curve(estimator, x, y, cv=5, scoring="f1",
     train_sizes=np.linspace(0.1, 1.0, 8),n_jobs=-1)
-
     plt.figure(figsize=(8,6))
-    plt.plot(train_sizes, train_scores.mean(axis=1), label="Train F1")
-    plt.plot(train_sizes, val_scores.mean(axis=1), label="Validation F1")
+    plt.plot(train_sizes, train_scores.mean(axis=1), label="F1 antrenare")
+    plt.plot(train_sizes, val_scores.mean(axis=1), label="F1 validare")
     plt.fill_between(train_sizes,
                      train_scores.mean(axis=1) - train_scores.std(axis=1),
                      train_scores.mean(axis=1) + train_scores.std(axis=1), alpha=0.1)
     plt.fill_between(train_sizes,
                      val_scores.mean(axis=1) - val_scores.std(axis=1),
                      val_scores.mean(axis=1) + val_scores.std(axis=1), alpha=0.1)
-    plt.title(f"Learning curve - {title}")
-    plt.xlabel("Training samples")
-    plt.ylabel("F1 score")
+    plt.title(f"Curba invatare - {title}")
+    plt.xlabel("Nr exemple antrenare")
+    plt.ylabel("SCor F1")
     plt.legend()
-    plt.savefig(f"../plots/learning_curve_{title}.pdf", bbox_inches="tight")
+    plt.savefig(f"../figuri_clasificare/curba_invatare_{title}.pdf", bbox_inches="tight")
     plt.show()
 
-plot_learning_curve(best_rf, "Random Forest", x, y)
-plot_learning_curve(best_xgb, "XGBoost", x, y)
+plot_curba_invatare(best_rf, "Random Forest", x, y)
+plot_curba_invatare(best_xgb, "XGBoost", x, y)
 
 #AUC + MCC
-print("\n=== AUC ===")
-for name, clf in [("LR", best_lr), ("RF", best_rf), ("KNN", best_knn), ("XGB", best_xgb)]:
-    proba = clf.predict_proba(x_test)[:, 1]
-    print(f"{name} AUC: {roc_auc_score(y_test, proba):.3f}")
+print("\n=== Scor AUC ===")
+for nume, clf in [("RL", best_rl), ("RF", best_rf), ("KNN", best_knn), ("XGB", best_xgb)]:
+    probabilitati = clf.predict_proba(x_test)[:, 1]
+    print(f"{nume} AUC: {roc_auc_score(y_test, probabilitati):.3f}")
 
-print("\n=== Matthews Correlation coefficient ===")
-for name, pred in [("LR", pred_log_tuned), ("RF", pred_rf_tuned), ("KNN", pred_knn_tuned), ("SVM", pred_svm_tuned), ("XGB", pred_xgb_tuned)]:
-    print(f"{name} MCC: {matthews_corrcoef(y_test, pred):.3f}")
+print("\n=== Coeficient de corelatie Matthews(MCC) ===")
+for nume, pred in [("RL", pred_rl_optimizat), ("RF", pred_rf_optimizat), ("KNN", pred_knn_optimizat), ("SVM", pred_svm_optimizat), ("XGB", pred_xgb_optimizat)]:
+    print(f"{nume} MCC: {matthews_corrcoef(y_test, pred):.3f}")
 
-
+#comparatie acuratete
 rezultate = {
-    "Logistic Regression": accuracy_score(y_test, pred_log_tuned),
-    "Random Forest": accuracy_score(y_test, pred_rf_tuned),
-    "KNN": accuracy_score(y_test, pred_knn_tuned),
-    "SVM": accuracy_score(y_test, pred_svm_tuned),
-    "XGBoost": accuracy_score(y_test, pred_xgb_tuned)
+    "Regresie Logistica": accuracy_score(y_test, pred_rl_optimizat),
+    "Random Forest": accuracy_score(y_test, pred_rf_optimizat),
+    "KNN": accuracy_score(y_test, pred_knn_optimizat),
+    "SVM": accuracy_score(y_test, pred_svm_optimizat),
+    "XGBoost": accuracy_score(y_test, pred_xgb_optimizat)
 }
 
 plt.figure(figsize=(8,6))
 plt.barh(list(rezultate.keys()), list(rezultate.values()), color="steelblue")
 plt.xlim(0.5, 1.0)
-plt.xlabel("Precizie")
-plt.title("Comparatie modele - Precizie")
+plt.xlabel("Acuratete")
+plt.title("Comparatie modele - Acuratete")
 plt.tight_layout()
-plt.savefig("../plots/Comparatie_modele_precizie.pdf", dpi=300, bbox_inches="tight")
+plt.savefig("../figuri_clasificare/comparatie_modele_acuratete.pdf", dpi=300, bbox_inches="tight")
 plt.show()
 
 
-print("\nComparatie lr vs rf vs knn vs svm vs XGBoost:")
-print(f"Logistic regression:{accuracy_score(y_test, pred_log_tuned):.3f}")
-print(f"Random Forest:{accuracy_score(y_test, pred_rf_tuned):.3f}")
-print(f"KNN:{accuracy_score(y_test, pred_knn_tuned):.3f}")
-print(f"SVM:{accuracy_score(y_test, pred_svm_tuned):.3f}")
-print(f"XGBoost:{accuracy_score(y_test, pred_xgb_tuned):.3f}")
+print("\nComparatie RL vs RF vs KNN vs SVM vs XGBoost:")
+print(f"Regresie Logistica:{accuracy_score(y_test, pred_rl_optimizat):.3f}")
+print(f"Random Forest:{accuracy_score(y_test, pred_rf_optimizat):.3f}")
+print(f"KNN:{accuracy_score(y_test, pred_knn_optimizat):.3f}")
+print(f"SVM:{accuracy_score(y_test, pred_svm_optimizat):.3f}")
+print(f"XGBoost:{accuracy_score(y_test, pred_xgb_optimizat):.3f}")
 
 #tabel comparatie base vs tuned
-print(f"\n{'Model':<20} {'Acc base':>10} {'Acc tuned':>10} {'F1 base':>10} {'F1 tuned':>10}")
+print(f"\n{'Model':<20} {'Acuratete normala':>10} {'Acuratete optimizata':>10} {'F1 normal':>10} {'F1 optimizat':>10}")
 print("-" * 60)
 
-model = ["LR", "RF", "KNN", "SVM", "XGB"]
-base_preds = [pred_log_base, pred_rf_base, pred_knn_base, pred_svm_base, pred_xgb_base]
-tuned_preds = [pred_log_tuned, pred_rf_tuned, pred_knn_tuned, pred_svm_tuned, pred_xgb_tuned]
+model = ["RL", "RF", "KNN", "SVM", "XGB"]
+pred_normale = [pred_rl_normal, pred_rf_normal, pred_knn_normal, pred_svm_normal, pred_xgb_normal]
+pred_optimizate = [pred_rl_optimizat, pred_rf_optimizat, pred_knn_optimizat, pred_svm_optimizat, pred_xgb_optimizat]
 
-for name, base, tuned in zip(model, base_preds, tuned_preds):
-    print(f"{name:<20}"
-          f"{accuracy_score(y_test, base):>10.3f}"
-          f"{accuracy_score(y_test, tuned):>10.3f}"
-          f"{f1_score(y_test, base):>10.3f}"
-          f"{f1_score(y_test, tuned):>10.3f}")
+for nume, normal, optimizat in zip(model, pred_normale, pred_optimizate):
+    print(f"{nume:<20}"
+          f"{accuracy_score(y_test, normal):>10.3f}"
+          f"{accuracy_score(y_test, optimizat):>10.3f}"
+          f"{f1_score(y_test, normal):>10.3f}"
+          f"{f1_score(y_test, optimizat):>10.3f}")

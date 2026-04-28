@@ -15,16 +15,15 @@ from xgboost import XGBRegressor
 from scipy.stats import randint
 from sklearn.model_selection import RandomizedSearchCV
 from sklearn.pipeline import Pipeline
-
-os.makedirs("../plots_regresie", exist_ok=True)
+os.makedirs("../figuri_regresie", exist_ok=True)
 
 #Incarcare set de date
 df = pd.read_csv("../data/spotify_dataset.csv")
 df = df.dropna().copy()
 df = df.drop_duplicates(subset=["track_id"])
-print(f"Shape dupa deduplicare: {df.shape}")
+print(f"Dimensiune dupa eliminarea duplicatelor: {df.shape}")
 
-features = ["danceability",
+caracteristici = ["danceability",
             "energy",
             "loudness",
             "speechiness",
@@ -39,7 +38,7 @@ features = ["danceability",
             "mode",
             "time_signature"]
 
-x = df[features]
+x = df[caracteristici]
 y = df["popularity"]
 
 x_train, x_test, y_train, y_test = train_test_split(x, y, test_size=0.2, random_state=42)
@@ -48,89 +47,87 @@ x_train = scaler.fit_transform(x_train)
 x_test = scaler.transform(x_test)
 
 #fct evaluare modele
-def evaluare(name, y_test, pred):
-    mae = mean_absolute_error(y_test, pred)
-    rmse = np.sqrt(mean_squared_error(y_test, pred))
-    r2 = r2_score(y_test, pred)
-    print(f"\n=== {name} ===")
+def evaluare(nume, y_test, predictie):
+    mae = mean_absolute_error(y_test, predictie)
+    rmse = np.sqrt(mean_squared_error(y_test, predictie))
+    r2 = r2_score(y_test, predictie)
+    print(f"\n=== {nume} ===")
     print(f"MAE: {mae:.3f}")
     print(f"RMSE: {rmse:.3f}")
     print(f"R2: {r2:.3f}")
-    return{"Model": name, "MAE":mae, "RMSE":rmse, "R2":r2}
+    return{"Model": nume, "MAE":mae, "RMSE":rmse, "R2":r2}
 
-#Linear Regression
-lr = LinearRegression()
-lr.fit(x_train, y_train)
-pred_lr = lr.predict(x_test)
-rezultate = [evaluare("Linear Regression", y_test, pred_lr)]
+#Regresie liniara
+rl = LinearRegression()
+rl.fit(x_train, y_train)
+pred_rl = rl.predict(x_test)
+rezultate = [evaluare("Linear Regression", y_test, pred_rl)]
 
-#Ridge baseline
-ridge = Ridge(alpha=1.0)
-ridge.fit(x_train, y_train)
-pred_ridge_base = ridge.predict(x_test)
-rezultate.append(evaluare("Ridge (base)", y_test, pred_ridge_base))
+#Ridge
+ridge_normal = Ridge(alpha=1.0)
+ridge_normal.fit(x_train, y_train)
+pred_ridge_normal = ridge_normal.predict(x_test)
+rezultate.append(evaluare("Ridge (normal)", y_test, pred_ridge_normal))
 
-ridge_param_grid = {
+ridge_parametri = {
     "alpha": [0.01, 0.1, 1.0, 10, 100]
 }
-ridge_grid = GridSearchCV(Ridge(), ridge_param_grid,
+ridge_cautare = GridSearchCV(Ridge(), ridge_parametri,
                           cv=5, scoring="neg_root_mean_squared_error", n_jobs=-1, verbose=1)
-ridge_grid.fit(x_train, y_train)
-print("Best Ridge params:", ridge_grid.best_params_)
-best_ridge = ridge_grid.best_estimator_
-pred_ridge_tuned = best_ridge.predict(x_test)
-rezultate.append(evaluare("Ridge (tuned)", y_test, pred_ridge_tuned))
+ridge_cautare.fit(x_train, y_train)
+print("Parametri optimi Ridge:", ridge_cautare.best_params_)
+ridge_optimizat = ridge_cautare.best_estimator_
+pred_ridge_optimizat = ridge_optimizat.predict(x_test)
+rezultate.append(evaluare("Ridge (optimizat)", y_test, pred_ridge_optimizat))
 
+#Random Forest
+rf_normal = RandomForestRegressor(n_estimators=100, random_state=42, n_jobs=-1)
+rf_normal.fit(x_train, y_train)
+pred_rf_normal = rf_normal.predict(x_test)
+rezultate.append(evaluare("Random Forest (normal)", y_test, pred_rf_normal))
 
-
-#Random Forest Regressor
-rf = RandomForestRegressor(n_estimators=100, random_state=42, n_jobs=-1)
-rf.fit(x_train, y_train)
-pred_rf_base = rf.predict(x_test)
-rezultate.append(evaluare("Random Forest (base)", y_test, pred_rf_base))
-
-rf_param_grid = {
+rf_parametri = {
     "n_estimators": [100, 200, 300],
     "max_depth": [None, 10, 20],
     "min_samples_split": [2, 5, 10],
     "min_samples_leaf": [1, 2, 4]
 }
-rf_grid = GridSearchCV(RandomForestRegressor(random_state=42, n_jobs=-1),rf_param_grid,
+rf_cautare = GridSearchCV(RandomForestRegressor(random_state=42, n_jobs=-1),rf_parametri,
                        cv=3, scoring="neg_root_mean_squared_error", n_jobs=-1)
-rf_grid.fit(x_train, y_train)
-print("Best RF params:", rf_grid.best_params_)
-best_rf = rf_grid.best_estimator_
-pred_rf_tuned = best_rf.predict(x_test)
-rezultate.append(evaluare("Random Forest (tuned)", y_test, pred_rf_tuned))
+rf_cautare.fit(x_train, y_train)
+print("Parametri optimi RF:", rf_cautare.best_params_)
+rf_optimizat = rf_cautare.best_estimator_
+pred_rf_optimizat = rf_optimizat.predict(x_test)
+rezultate.append(evaluare("Random Forest (optimizat)", y_test, pred_rf_optimizat))
 
 
-#KNN regressor
-knn = KNeighborsRegressor(n_neighbors=5, n_jobs=-1)
-knn.fit(x_train, y_train)
-pred_knn_base= knn.predict(x_test)
-rezultate.append(evaluare("KNN (base)", y_test, pred_knn_base))
+#KNN
+knn_normal = KNeighborsRegressor(n_neighbors=5, n_jobs=-1)
+knn_normal.fit(x_train, y_train)
+pred_knn_normal= knn_normal.predict(x_test)
+rezultate.append(evaluare("KNN (normal)", y_test, pred_knn_normal))
 
-knn_param_grid = {
+knn_parametri = {
     "n_neighbors": [3, 5, 7, 11, 15, 21],
     "weights": ["uniform", "distance"],
     "metric": ["euclidean", "manhattan"]
 }
-knn_grid = GridSearchCV(KNeighborsRegressor(n_jobs=-1), knn_param_grid,
+knn_cautare = GridSearchCV(KNeighborsRegressor(n_jobs=-1), knn_parametri,
                         cv=5, scoring="neg_root_mean_squared_error", n_jobs=-1, verbose=1)
-knn_grid.fit(x_train, y_train)
-print("Best KNN params:", knn_grid.best_params_)
-best_knn = knn_grid.best_estimator_
-pred_knn_tuned = best_knn.predict(x_test)
-rezultate.append(evaluare("KNN (tuned)", y_test, pred_knn_tuned))
+knn_cautare.fit(x_train, y_train)
+print("Parametri optimi KNN:", knn_cautare.best_params_)
+knn_optimizat = knn_cautare.best_estimator_
+pred_knn_optimizat = knn_optimizat.predict(x_test)
+rezultate.append(evaluare("KNN (optimizat)", y_test, pred_knn_optimizat))
 
-#XGBoost Regressor
-xgb = XGBRegressor(n_estimators=200, learning_rate=0.1, max_depth=6,
+#XGBoost
+xgb_normal = XGBRegressor(n_estimators=200, learning_rate=0.1, max_depth=6,
                    random_state=42, eval_metric="rmse", n_jobs=-1)
-xgb.fit(x_train, y_train)
-pred_xgb_base = xgb.predict(x_test)
-rezultate.append(evaluare("XGBoost (base)", y_test, pred_xgb_base))
+xgb_normal.fit(x_train, y_train)
+pred_xgb_normal = xgb_normal.predict(x_test)
+rezultate.append(evaluare("XGBoost (normal)", y_test, pred_xgb_normal))
 
-xgb_param_dist = {
+xgb_parametri = {
     "n_estimators": randint(100, 400),
     "max_depth": randint(3, 10),
     "learning_rate": [0.01, 0.05, 0.1, 0.2],
@@ -138,114 +135,114 @@ xgb_param_dist = {
     "colsample_bytree": [0.6, 0.8, 1.0]
 }
 xgb_rand = RandomizedSearchCV(XGBRegressor(eval_metric="rmse", random_state=42, n_jobs=-1),
-                              xgb_param_dist, n_iter=15, cv=3,
+                              xgb_parametri, n_iter=15, cv=3,
                               scoring="neg_root_mean_squared_error", n_jobs=-1, random_state=42)
 xgb_rand.fit(x_train, y_train)
-print("Best XGB params:", xgb_rand.best_params_)
-best_xgb = xgb_rand.best_estimator_
-pred_xgb_tuned = best_xgb.predict(x_test)
-rezultate.append(evaluare("XGB (tuned)", y_test, pred_xgb_tuned))
+print("Parametri optimi XGB:", xgb_rand.best_params_)
+xgb_optimizat = xgb_rand.best_estimator_
+pred_xgb_optimizat = xgb_optimizat.predict(x_test)
+rezultate.append(evaluare("XGB (optimizat)", y_test, pred_xgb_optimizat))
 
 
-#actual vs predicted plot
+#valori reale vs valori prezise
 plt.figure(figsize=(8,6))
-plt.scatter(y_test, pred_xgb_tuned, alpha=0.3, s=10, color="steelblue")
-plt.plot([0, 100], [0, 100], color="red", linestyle="--", label="Perfect prediction")
-plt.xlabel("Actual Popularity")
-plt.ylabel("Predicted Popularity")
-plt.title("Actual vs Predicted-XGBoost")
+plt.scatter(y_test, pred_xgb_optimizat, alpha=0.3, s=10, color="steelblue")
+plt.plot([0, 100], [0, 100], color="red", linestyle="--", label="Predictie perfecta")
+plt.xlabel("Popularitate reala")
+plt.ylabel("Popularitate prezisa")
+plt.title("Valori reale vs valori prezise - XGBoost")
 plt.legend()
-plt.savefig("../plots_regresie/actual_vs_predicted.pdf", bbox_inches="tight")
+plt.savefig("../figuri_regresie/valori_reale_vs_prezise.pdf", bbox_inches="tight")
 plt.show()
 
-#Residual plots
-residuals = y_test - pred_xgb_tuned
+#reziduuri(xgb)
+residuals = y_test - pred_xgb_optimizat
 plt.figure(figsize=(8,6))
-plt.scatter(pred_xgb_tuned, residuals, alpha=0.3, s=10, color="seagreen")
+plt.scatter(pred_xgb_optimizat, residuals, alpha=0.3, s=10, color="seagreen")
 plt.axhline(0, color="red", linestyle="--")
-plt.xlabel("Predicted Popularity")
-plt.ylabel("Residuals")
-plt.title("Residual Plot-XGBoost")
-plt.savefig("../plots_regresie/residuals.pdf", bbox_inches="tight")
+plt.xlabel("Popularitate prezisa")
+plt.ylabel("Reziduuri")
+plt.title("Grafic reziduuri-XGBoost")
+plt.savefig("../figuri_regresie/reziduuri.pdf", bbox_inches="tight")
 plt.show()
 
-#MAE RMSE comparatie --- use "best_models.predict(x_test) for tuning
-model_name = ["Linear Regression", "Ridge", "Random Forest", "KNN", "XGBoost"]
-mae_scores = [mean_absolute_error(y_test, p) for p in [pred_lr, pred_ridge_tuned, pred_rf_tuned, pred_knn_tuned, pred_xgb_tuned]]
-rmse_scores = [np.sqrt(mean_squared_error(y_test, p)) for p in [pred_lr, pred_ridge_tuned, pred_rf_tuned, pred_knn_tuned, pred_xgb_tuned]]
+#comparatie mae vs rmse
+model = ["Regresie liniara", "Ridge", "Random Forest", "KNN", "XGBoost"]
+scor_mae = [mean_absolute_error(y_test, p) for p in [pred_rl, pred_ridge_optimizat, pred_rf_optimizat, pred_knn_optimizat, pred_xgb_optimizat]]
+scor_rmse = [np.sqrt(mean_squared_error(y_test, p)) for p in [pred_rl, pred_ridge_optimizat, pred_rf_optimizat, pred_knn_optimizat, pred_xgb_optimizat]]
 
-x = np.arange(len(model_name))
+x = np.arange(len(model))
 width = 0.35
 fig, ax = plt.subplots(figsize=(10,5))
-ax.bar(x-width/2, mae_scores, width, label="MAE", color="steelblue")
-ax.bar(x+width/2, rmse_scores, width, label="RMSE", color="seagreen")
+ax.bar(x-width/2, scor_mae, width, label="MAE", color="steelblue")
+ax.bar(x+width/2, scor_rmse, width, label="RMSE", color="seagreen")
 ax.set_xticks(x)
-ax.set_xticklabels(model_name)
-ax.set_ylabel("Error")
-ax.set_title("MAE vs RMSE")
+ax.set_xticklabels(model)
+ax.set_ylabel("Eroare")
+ax.set_title("Comparatie MAE vs RMSE")
 ax.legend()
 plt.tight_layout()
-plt.savefig("../plots_regresie/mae_rmse.pdf", bbox_inches="tight")
+plt.savefig("../figuri_regresie/comparatie_mae_rmse.pdf", bbox_inches="tight")
 plt.show()
 
 #r2
-r2_scores = [r2_score(y_test, p) for p in [pred_lr, pred_ridge_tuned, pred_rf_tuned, pred_knn_tuned, pred_xgb_tuned]]
+scor_r2 = [r2_score(y_test, p) for p in [pred_rl, pred_ridge_optimizat, pred_rf_optimizat, pred_knn_optimizat, pred_xgb_optimizat]]
 plt.figure(figsize=(8, 5))
-plt.barh(model_name, r2_scores, color="steelblue")
-plt.xlabel("R2 Score")
-plt.title("R2 Score Comparatie")
+plt.barh(model, scor_r2, color="steelblue")
+plt.xlabel("Scor R2")
+plt.title("Comparatie scor R2")
 plt.axvline(0, color="red", linestyle="--")
 plt.tight_layout()
-plt.savefig("../plots_regresie/r2_comparatie.pdf", bbox_inches="tight")
+plt.savefig("../figuri_regresie/comparatie_scor_r2.pdf", bbox_inches="tight")
 plt.show()
 
-#residual distribution
-residuals = y_test - pred_xgb_tuned
+#distributia reziduurilor(xgb)
+reziduuri = y_test - pred_xgb_optimizat
 plt.figure(figsize=(8,5))
-plt.hist(residuals, bins=50, color="mediumpurple", edgecolor="white")
+plt.hist(reziduuri, bins=50, color="mediumpurple", edgecolor="white")
 plt.axvline(0, color="red", linestyle="--")
-plt.xlabel("Residual")
-plt.ylabel("Count")
+plt.xlabel("Reziduuri")
+plt.ylabel("Numar")
 plt.title("Distributia reziduurilor - XGBoost")
-plt.savefig("../plots_regresie/residuals_distribution.pdf", bbox_inches="tight")
+plt.savefig("../figuri_regresie/distributie_reziduuri.pdf", bbox_inches="tight")
 plt.show()
 
-#feature importance
-importance = best_xgb.feature_importances_
-indices = np.argsort(importance)
+#importanta caracteristicilor(xgb)
+importanta = xgb_optimizat.feature_importances_
+indici = np.argsort(importanta)
 plt.figure(figsize=(8,6))
-plt.barh(range(len(indices)), importance[indices], color="darkorange")
-plt.yticks(range(len(indices)), [features[i] for i in indices])
-plt.title("Feature importances - XGBoost Regressor")
-plt.savefig("../plots_regresie/feature_importances.pdf", bbox_inches="tight")
+plt.barh(range(len(indici)), importanta[indici], color="darkorange")
+plt.yticks(range(len(indici)), [caracteristici[i] for i in indici])
+plt.title("Importanta caracteristicilor - XGBoost regresie")
+plt.savefig("../figuri_regresie/importanta_caracteristici.pdf", bbox_inches="tight")
 plt.show()
 
-#tabel comparatie base vs tuned
-model = ["Linear Regression", "Ridge", "Random Forest", "KNN", "XGBoost"]
-baseline_preds = [pred_lr, pred_ridge_base, pred_rf_base, pred_knn_base, pred_xgb_base]
-tuned_preds = [pred_lr, pred_ridge_tuned, pred_rf_tuned, pred_knn_tuned, pred_xgb_tuned]
+#comparatie modele normale vs optimizate
+model = ["Regresie liniara", "Ridge", "Random Forest", "KNN", "XGBoost"]
+pred_normal = [pred_rl, pred_ridge_normal, pred_rf_normal, pred_knn_normal, pred_xgb_normal]
+pred_optimizat = [pred_rl, pred_ridge_optimizat, pred_rf_optimizat, pred_knn_optimizat, pred_xgb_optimizat]
 
-print(f"\n{'Model':<20} {'MAE base':>10} {'MAE tuned' :>10} {'RMSE base':>10} {'RMSE tuned':>10} {'R2 base':>8}{'R2 tuned':>8}")
+print(f"\n{'Model':<20} {'MAE normal':>10} {'MAE optimizat' :>10} {'RMSE normal':>10} {'RMSE optimizat':>10} {'R2 normal':>8}{'R2 optimizat':>8}")
 print("-" * 80)
-for name, base, tuned in zip(model, baseline_preds, tuned_preds):
-    print(f"{name:<20}"
-          f"{mean_absolute_error(y_test, base):>10.3f}"
-          f"{mean_absolute_error(y_test, tuned):>10.3f}"
-          f"{np.sqrt(mean_squared_error(y_test, base)):>10.3f}"
-          f"{np.sqrt(mean_squared_error(y_test, tuned)):>10.3f}"
-          f"{r2_score(y_test, base):>8.3f}"
-          f"{r2_score(y_test, tuned):>8.3f}")
+for nume, normal, optimizat in zip(model, pred_normal, pred_optimizat):
+    print(f"{nume:<20}"
+          f"{mean_absolute_error(y_test, normal):>10.3f}"
+          f"{mean_absolute_error(y_test, optimizat):>10.3f}"
+          f"{np.sqrt(mean_squared_error(y_test, normal)):>10.3f}"
+          f"{np.sqrt(mean_squared_error(y_test, optimizat)):>10.3f}"
+          f"{r2_score(y_test, normal):>8.3f}"
+          f"{r2_score(y_test, optimizat):>8.3f}")
 
-print("\n=== Cross Validation Regresie 5fold ===")
-for name, model in [
-    ("Linear Regression", lr),
-    ("Ridge", best_ridge),
-    ("Random Forest", best_rf),
-    ("KNN", best_knn),
-    ("XGBoost", best_xgb),
+print("\n=== Validare incrusisata regresie 5fold ===")
+for nume, model in [
+    ("Regresie liniara", rl),
+    ("Ridge", ridge_optimizat),
+    ("Random Forest", rf_optimizat),
+    ("KNN", knn_optimizat),
+    ("XGBoost", xgb_optimizat),
 
 ]:
     pipe = Pipeline([("scaler", StandardScaler()), ("model", model)])
-    scores = cross_val_score(pipe, df[features], df["popularity"],
+    scor = cross_val_score(pipe, df[caracteristici], df["popularity"],
                              cv=5, scoring="neg_root_mean_squared_error", n_jobs=-1)
-    print(f"{name}: RMSE={(-scores.mean()):.3f} (+/- {scores.std():.3f})")
+    print(f"{nume}: RMSE={(-scor.mean()):.3f} (+/- {scor.std():.3f})")
