@@ -303,7 +303,7 @@ fig, axes = plt.subplots(1,2, figsize = (16,6))
 sns.heatmap(df.corr(numeric_only=True), cmap="coolwarm", ax=axes[0])
 axes[0].set_title("Harta de corelatie")
 
-sns.histplot(df["popularity"], bins=50, ax=axes[1], log_scale=True)
+sns.histplot(df["Popularitate"], bins=50, ax=axes[1], log_scale=True)
 axes[1].set_title("Dstributia popularitatii")
 
 plt.tight_layout()
