@@ -25,6 +25,7 @@ from sklearn.model_selection import learning_curve
 from sklearn.metrics import roc_auc_score, matthews_corrcoef
 from sklearn.metrics import f1_score
 os.makedirs("../figuri_clasificare", exist_ok=True)
+N_RULARI = 10
 
 #Incarcare set de date
 df = pd.read_csv("../data/spotify_dataset.csv")
@@ -278,6 +279,48 @@ pipe_xgb = Pipeline([
     ("model", best_xgb)
 ])
 
+scor_acuratete_normal = {"RL": [], "RF": [], "KNN": [], "SVM": [], "XGB": []}
+scor_f1_normal = {"RL": [], "RF": [], "KNN": [], "SVM": [], "XGB": []}
+scor_acuratete_optimizat = {"RL": [], "RF": [], "KNN": [], "SVM": [], "XGB": []}
+scor_f1_optimizat = {"RL": [], "RF": [], "KNN": [], "SVM": [], "XGB": []}
+
+pipe_rl_normal = Pipeline([
+    ("scaler", StandardScaler()),
+    ("model", LogisticRegression(max_iter=1000, class_weight="balanced"))
+])
+pipe_rf_normal = Pipeline([
+    ("scaler", StandardScaler()),
+    ("model", RandomForestClassifier(n_estimators=100, class_weight="balanced"))
+])
+pipe_knn_normal = Pipeline([
+    ("scaler", StandardScaler()),
+     ("model", KNeighborsClassifier(n_neighbors=5, n_jobs=-1))
+])
+pipe_svm_normal = Pipeline([
+    ("scaler", StandardScaler()),
+    ("model", LinearSVC(class_weight="balanced", max_iter=2000))
+])
+pipe_xgb_normal = Pipeline([
+    ("scaler", StandardScaler()),
+    ("model", XGBClassifier(scale_pos_weight=raport, eval_metric="logloss", n_jobs=-1))
+])
+print("\n --- 10 rulari ---")
+for rs in range(N_RULARI):
+    x_train_r, x_test_r, y_train_r, y_test_r = train_test_split(x, y, test_size=0.2, random_state=rs)
+
+    for nume, pipe in [("RL", pipe_rl_normal), ("RF", pipe_rf_normal), ("KNN", pipe_knn_normal), ("SVM", pipe_svm_normal), ("XGB", pipe_xgb_normal)]:
+        pipe.fit(x_train_r, y_train_r)
+        pred = pipe.predict(x_test_r)
+        scor_acuratete_normal[nume].append(accuracy_score(y_test_r, pred))
+        scor_f1_normal[nume].append(f1_score(y_test_r, pred))
+    for nume, pipe in [("RL", pipe_rl), ("RF", pipe_rf), ("KNN", pipe_knn), ("SVM", pipe_svm), ("XGB", pipe_xgb)]:
+        pipe.fit(x_train_r, y_train_r)
+        pred = pipe.predict(x_test_r)
+        scor_acuratete_optimizat[nume].append(accuracy_score(y_test_r, pred))
+        scor_f1_optimizat[nume].append(f1_score(y_test_r, pred))
+
+    print(f"rulari {rs+1}/{N_RULARI}")
+
 #Validare incrucisata pe x(date initiale)
 print("\n===Validare incrucisata(5fold)===")
 for nume, pipe in [("RL", pipe_rl), ("RF",pipe_rf), ("KNN", pipe_knn), ("SVM", pipe_svm), ("XGB", pipe_xgb)]:
@@ -303,7 +346,7 @@ fig, axes = plt.subplots(1,2, figsize = (16,6))
 sns.heatmap(df.corr(numeric_only=True), cmap="coolwarm", ax=axes[0])
 axes[0].set_title("Harta de corelatie")
 
-sns.histplot(df["Popularitate"], bins=50, ax=axes[1], log_scale=True)
+sns.histplot(df["popularity"], bins=50, ax=axes[1], log_scale=True)
 axes[1].set_title("Dstributia popularitatii")
 
 plt.tight_layout()
@@ -423,3 +466,58 @@ for nume, normal, optimizat in zip(model, pred_normale, pred_optimizate):
           f"{accuracy_score(y_test, optimizat):>10.3f}"
           f"{f1_score(y_test, normal):>10.3f}"
           f"{f1_score(y_test, optimizat):>10.3f}")
+print(f"\n{'Model':<8}{'Acuratete normala':>10}{'Acuratete optimizata':>9}{'Scor F1 normal':>10}{'Scor F1 optimizat':>9}")
+print("-" * 60)
+
+for nume in model:
+    acuratete_normala_medie = np.mean(scor_acuratete_normal[nume])
+    acuratete_normala_deviatie = np.std(scor_acuratete_normal[nume])
+    acuratete_optimizata_medie = np.mean(scor_acuratete_optimizat[nume])
+    acuratete_optimizata_deviatie = np.std(scor_acuratete_optimizat[nume])
+    f1_normal_medie = np.mean(scor_f1_normal[nume])
+    f1_normal_deviatie = np.std(scor_f1_normal[nume])
+    f1_optimizat_medie = np.mean(scor_f1_optimizat[nume])
+    f1_optimizat_deviatie = np.std(scor_f1_optimizat[nume])
+
+    print(f"{nume:<8}"
+          f"{acuratete_normala_medie:>10.3f} +- {acuratete_normala_deviatie:>10.3f}"
+          f"{acuratete_optimizata_medie:>10.3f} +- {acuratete_optimizata_deviatie:>10.3f}"
+          f"{f1_normal_medie:>10.3f} +- {f1_normal_deviatie:>10.3f}"
+          f"{f1_optimizat_medie:>10.3f} +- {f1_optimizat_deviatie:>10.3f}")
+
+fig, axes = plt.subplots(1, 2, figsize=(16, 6))
+
+f1_normal_medii = [np.mean(scor_f1_normal[nume]) for nume in model]
+f1_normal_deviatii = [np.std(scor_f1_normal[nume]) for nume in model]
+f1_optimizat_medii = [np.mean(scor_f1_optimizat[nume]) for nume in model]
+f1_optimizat_deviatii = [np.std(scor_f1_optimizat[nume]) for nume in model]
+
+axes[0].barh(model, f1_normal_medii, xerr=f1_normal_deviatii, color="steelblue", capsize=5)
+axes[0].set_xlim(0.3, 1.0)
+axes[0].set_xlabel("Scor F1 mediu")
+axes[0].set_title("Scor F1 mediu(varianta normala) +- deviatie")
+
+axes[1].barh(model, f1_optimizat_medii, xerr=f1_optimizat_deviatii, color="steelblue", capsize=5)
+axes[1].set_xlim(0.3, 1.0)
+axes[1].set_xlabel("Scor F1 mediu")
+axes[1].set_title("Scor F1 mediu(varianta optimizata) +- deviatie")
+
+plt.tight_layout()
+plt.savefig("../figuri_clasificare/comparatie_f1.pdf", dpi=300, bbox_inches="tight")
+plt.show()
+
+
+fig, axes = plt.subplots(1, 2, figsize=(16, 6))
+
+axes[0].boxplot([scor_f1_normal[nume] for nume in model],
+                 labels=model, vert=False)
+axes[0].set_xlabel("Scor F1")
+axes[0].set_title("Distributia F1(varianta normala)")
+
+axes[1].boxplot([scor_f1_optimizat[nume] for nume in model],
+                labels=model, vert=False)
+axes[1].set_xlabel("Scor F1")
+axes[1].set_title("Distributia F1(varianta optimizata)")
+plt.tight_layout()
+plt.savefig("../figuri_clasificcare/boxplot_f1.pdf", dpi=300, bbox_inches="tight")
+plt.show()
