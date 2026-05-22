@@ -283,6 +283,8 @@ scor_acuratete_normal = {"RL": [], "RF": [], "KNN": [], "SVM": [], "XGB": []}
 scor_f1_normal = {"RL": [], "RF": [], "KNN": [], "SVM": [], "XGB": []}
 scor_acuratete_optimizat = {"RL": [], "RF": [], "KNN": [], "SVM": [], "XGB": []}
 scor_f1_optimizat = {"RL": [], "RF": [], "KNN": [], "SVM": [], "XGB": []}
+scor_auc_optimizat = {"RL": [], "RF": [], "KNN": [], "XGB": []}
+scor_mcc_optimizat = {"RL": [], "RF": [], "KNN": [], "SVM": [], "XGB": []}
 
 pipe_rl_normal = Pipeline([
     ("scaler", StandardScaler()),
@@ -319,7 +321,25 @@ for rs in range(N_RULARI):
         scor_acuratete_optimizat[nume].append(accuracy_score(y_test_r, pred))
         scor_f1_optimizat[nume].append(f1_score(y_test_r, pred))
 
+    for nume, pipe in [("RL", pipe_rl), ("RF", pipe_rf), ("KNN", pipe_knn), ("XGB", pipe_xgb)]:
+        pipe.fit(x_train_r, y_train_r)
+        prob = pipe.predict_proba(x_test_r)[:, 1]
+        scor_auc_optimizat[nume].append(roc_auc_score(y_test_r, prob))
+
+    for nume, pipe in [("RL", pipe_rl), ("RF", pipe_rf), ("KNN", pipe_knn), ("SVM", pipe_svm), ("XGB", pipe_xgb)]:
+        pred = pipe.predict(x_test_r)
+        scor_mcc_optimizat[nume].append(matthews_corrcoef(y_test_r, pred))
+
     print(f"rulari {rs+1}/{N_RULARI}")
+
+print("\n --- AUC mediu(10 rulari)---")
+for nume in ["RL", "RF", "KNN", "XGB"]:
+    print(f"{nume}: {np.mean(scor_auc_optimizat[nume]):.3f}"
+          f"+-{np.std(scor_auc_optimizat[nume]):.3f}")
+print("\n --- MCC mediu(10 rulari) ---")
+for nume in ["RL", "RF", "KNN", "SVM", "XGB"]:
+    print(f"{nume}: {np.mean(scor_mcc_optimizat[nume]):.3f}"
+          f"+-{np.std(scor_mcc_optimizat[nume]):.3f}")
 
 #Validare incrucisata pe x(date initiale)
 print("\n===Validare incrucisata(5fold)===")
@@ -347,7 +367,7 @@ sns.heatmap(df.corr(numeric_only=True), cmap="coolwarm", ax=axes[0])
 axes[0].set_title("Harta de corelatie")
 
 sns.histplot(df["popularity"], bins=50, ax=axes[1], log_scale=True)
-axes[1].set_title("Dstributia popularitatii")
+axes[1].set_title("Distributia popularitatii")
 
 plt.tight_layout()
 plt.savefig("../figuri_clasificare/corelatie_distributie_popularitate.pdf", dpi=300, bbox_inches="tight")
@@ -383,7 +403,7 @@ prag_decizie_optim = prag_decizie[np.argmax(scor_f1)]
 
 plt.figure(figsize=(8,6))
 plt.plot(prag_decizie, precizie[:-1], label="Precizie")
-plt.plot(prag_decizie, rechemare[:-1], label="Rechemare")
+plt.plot(prag_decizie, rechemare[:-1], label="RFechemare")
 plt.plot(prag_decizie, scor_f1, label="F1")
 plt.axvline(prag_decizie_optim, color="red", linestyle="--", label=f"Prag de decizie optim: {prag_decizie_optim:.2f}")
 plt.xlabel("Prag de decizie")
@@ -408,7 +428,7 @@ def plot_curba_invatare(estimator, title, x, y):
                      val_scores.mean(axis=1) + val_scores.std(axis=1), alpha=0.1)
     plt.title(f"Curba invatare - {title}")
     plt.xlabel("Nr exemple antrenare")
-    plt.ylabel("SCor F1")
+    plt.ylabel("Scor F1")
     plt.legend()
     plt.savefig(f"../figuri_clasificare/curba_invatare_{title}.pdf", bbox_inches="tight")
     plt.show()
@@ -417,23 +437,27 @@ plot_curba_invatare(best_rf, "Random Forest", x, y)
 plot_curba_invatare(best_xgb, "XGBoost", x, y)
 
 #AUC + MCC
-print("\n=== Scor AUC ===")
+print("\n=== Scor AUC(1 rulare)===")
 for nume, clf in [("RL", best_rl), ("RF", best_rf), ("KNN", best_knn), ("XGB", best_xgb)]:
     probabilitati = clf.predict_proba(x_test)[:, 1]
     print(f"{nume} AUC: {roc_auc_score(y_test, probabilitati):.3f}")
 
-print("\n=== Coeficient de corelatie Matthews(MCC) ===")
+print("\n=== Coeficient de corelatie Matthews(MCC)[1 rulare] ===")
 for nume, pred in [("RL", pred_rl_optimizat), ("RF", pred_rf_optimizat), ("KNN", pred_knn_optimizat), ("SVM", pred_svm_optimizat), ("XGB", pred_xgb_optimizat)]:
     print(f"{nume} MCC: {matthews_corrcoef(y_test, pred):.3f}")
 
-#comparatie acuratete
+#comparatie acuratete medii
 rezultate = {
-    "Regresie Logistica": accuracy_score(y_test, pred_rl_optimizat),
-    "Random Forest": accuracy_score(y_test, pred_rf_optimizat),
-    "KNN": accuracy_score(y_test, pred_knn_optimizat),
-    "SVM": accuracy_score(y_test, pred_svm_optimizat),
-    "XGBoost": accuracy_score(y_test, pred_xgb_optimizat)
+    "Regresie Logistica": np.mean(scor_acuratete_optimizat["RL"]),
+    "Random Forest": np.mean(scor_acuratete_optimizat["RF"]),
+    "KNN": np.mean(scor_acuratete_optimizat["KNN"]),
+    "SVM": np.mean(scor_acuratete_optimizat["SVM"]),
+    "XGBoost": np.mean(scor_acuratete_optimizat["XGB"])
 }
+acuratete_medii = list(rezultate.values())
+acuratete_deviatii = [np.std(scor_acuratete_optimizat[nume]) for nume in ["RL", "RF", "KNN", "SVM", "XGB"]]
+plt.barh(list(rezultate.keys()), acuratete_medii, xerr=acuratete_medii,
+         color="steelblue", capsize=5)
 
 plt.figure(figsize=(8,6))
 plt.barh(list(rezultate.keys()), list(rezultate.values()), color="steelblue")
@@ -445,7 +469,7 @@ plt.savefig("../figuri_clasificare/comparatie_modele_acuratete.pdf", dpi=300, bb
 plt.show()
 
 
-print("\nComparatie RL vs RF vs KNN vs SVM vs XGBoost:")
+print("\nComparatie acuratete(1 rulare) RL vs RF vs KNN vs SVM vs XGBoost:")
 print(f"Regresie Logistica:{accuracy_score(y_test, pred_rl_optimizat):.3f}")
 print(f"Random Forest:{accuracy_score(y_test, pred_rf_optimizat):.3f}")
 print(f"KNN:{accuracy_score(y_test, pred_knn_optimizat):.3f}")
@@ -510,14 +534,14 @@ plt.show()
 fig, axes = plt.subplots(1, 2, figsize=(16, 6))
 
 axes[0].boxplot([scor_f1_normal[nume] for nume in model],
-                 labels=model, vert=False)
+                 tick_labels=model, vert=False)
 axes[0].set_xlabel("Scor F1")
 axes[0].set_title("Distributia F1(varianta normala)")
 
 axes[1].boxplot([scor_f1_optimizat[nume] for nume in model],
-                labels=model, vert=False)
+                tick_labels=model, vert=False)
 axes[1].set_xlabel("Scor F1")
 axes[1].set_title("Distributia F1(varianta optimizata)")
 plt.tight_layout()
-plt.savefig("../figuri_clasificcare/boxplot_f1.pdf", dpi=300, bbox_inches="tight")
+plt.savefig("../figuri_clasificare/boxplot_f1.pdf", dpi=300, bbox_inches="tight")
 plt.show()
