@@ -77,7 +77,6 @@ pos = (y_train == 1).sum()
 raport = neg / pos
 print(f"Raport clase: {raport:.2f}")
 
-
 #Regresie logistica
 rl_normal = LogisticRegression(max_iter=1000, class_weight="balanced")
 rl_normal.fit(x_train, y_train)
@@ -360,7 +359,7 @@ plt.title("Importanta caracteristicilor - Random Forest")
 plt.savefig("../figuri_clasificare/importanta_caracteristici.pdf", dpi=300, bbox_inches="tight")
 plt.show()
 
-#figuri
+#harta corelatie + dist popularitatii
 fig, axes = plt.subplots(1,2, figsize = (16,6))
 
 sns.heatmap(df.corr(numeric_only=True), cmap="coolwarm", ax=axes[0])
@@ -403,7 +402,7 @@ prag_decizie_optim = prag_decizie[np.argmax(scor_f1)]
 
 plt.figure(figsize=(8,6))
 plt.plot(prag_decizie, precizie[:-1], label="Precizie")
-plt.plot(prag_decizie, rechemare[:-1], label="RFechemare")
+plt.plot(prag_decizie, rechemare[:-1], label="Rechemare")
 plt.plot(prag_decizie, scor_f1, label="F1")
 plt.axvline(prag_decizie_optim, color="red", linestyle="--", label=f"Prag de decizie optim: {prag_decizie_optim:.2f}")
 plt.xlabel("Prag de decizie")
@@ -413,7 +412,6 @@ plt.savefig("../figuri_clasificare/optimizare_prag_decizie.pdf", bbox_inches="ti
 plt.show()
 
 #curbe invatare RF, XGBoost
-
 def plot_curba_invatare(estimator, title, x, y):
     train_sizes, train_scores, val_scores=learning_curve(estimator, x, y, cv=5, scoring="f1",
     train_sizes=np.linspace(0.1, 1.0, 8),n_jobs=-1)
@@ -456,25 +454,22 @@ rezultate = {
 }
 acuratete_medii = list(rezultate.values())
 acuratete_deviatii = [np.std(scor_acuratete_optimizat[nume]) for nume in ["RL", "RF", "KNN", "SVM", "XGB"]]
-plt.barh(list(rezultate.keys()), acuratete_medii, xerr=acuratete_medii,
-         color="steelblue", capsize=5)
 
 plt.figure(figsize=(8,6))
-plt.barh(list(rezultate.keys()), list(rezultate.values()), color="steelblue")
-plt.xlim(0.5, 1.0)
-plt.xlabel("Acuratete")
-plt.title("Comparatie modele - Acuratete")
+plt.barh(list(rezultate.keys()), acuratete_medii, xerr=acuratete_deviatii,
+         color="steelblue", capsize=5)
+plt.xlim(0.3, 1.0)
+plt.xlabel("Acuratete medie(10 rulari)")
+plt.title("Comparatie modele - Acuratete medie +- deviatie")
 plt.tight_layout()
 plt.savefig("../figuri_clasificare/comparatie_modele_acuratete.pdf", dpi=300, bbox_inches="tight")
 plt.show()
 
 
-print("\nComparatie acuratete(1 rulare) RL vs RF vs KNN vs SVM vs XGBoost:")
-print(f"Regresie Logistica:{accuracy_score(y_test, pred_rl_optimizat):.3f}")
-print(f"Random Forest:{accuracy_score(y_test, pred_rf_optimizat):.3f}")
-print(f"KNN:{accuracy_score(y_test, pred_knn_optimizat):.3f}")
-print(f"SVM:{accuracy_score(y_test, pred_svm_optimizat):.3f}")
-print(f"XGBoost:{accuracy_score(y_test, pred_xgb_optimizat):.3f}")
+print("\nComparatie acuratete medie(10 rulari):")
+for nume, label in [("RL", "Regresie Logistica"), ("RF", "Random Forest"), ("KNN", "KNN"), ("SVM", "SVM"), ("XGB", "XGBoost")]:
+    print(f"{label}: {np.mean(scor_acuratete_optimizat[nume]):.3f}"
+          f"+- {np.std(scor_acuratete_optimizat[nume]):.3f}")
 
 #tabel comparatie base vs tuned
 print(f"\n{'Model':<20} {'Acuratete normala':>10} {'Acuratete optimizata':>10} {'F1 normal':>10} {'F1 optimizat':>10}")
