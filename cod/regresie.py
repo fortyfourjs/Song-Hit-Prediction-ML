@@ -329,7 +329,7 @@ for nume, normal, optimizat in zip(model, pred_normal, pred_optimizat):
           f"{r2_score(y_test, normal):>8.3f}"
           f"{r2_score(y_test, optimizat):>8.3f}")
 
-print("\n=== Validare incrusisata regresie 5fold ===")
+print("\n=== Validare incrucisata regresie 5fold ===")
 for nume, model in [
     ("Regresie liniara", rl),
     ("Ridge", ridge_optimizat),
