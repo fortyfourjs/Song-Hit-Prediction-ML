@@ -86,8 +86,7 @@ print(classification_report(y_test, pred_rl_normal))
 
 rl_parametri = {
     "C": [0.01, 0.1, 1, 10, 100],
-    "solver": ["lbfgs", "liblinear"],
-    "penalty": ["l2"]
+    "solver": ["lbfgs", "liblinear"]
 }
 rl_cautare = GridSearchCV(
     LogisticRegression(max_iter=1000, class_weight="balanced"),
