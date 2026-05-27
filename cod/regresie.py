@@ -15,6 +15,7 @@ from xgboost import XGBRegressor
 from scipy.stats import randint
 from sklearn.model_selection import RandomizedSearchCV, cross_validate
 from sklearn.pipeline import Pipeline
+from sklearn.model_selection import KFold
 
 
 os.makedirs("../figuri_regresie", exist_ok=True)
@@ -157,7 +158,6 @@ for rs in range(10):
         #varianta normala
         pipe_normal[nume].fit(x_train_r, y_train_r)
         pred = pipe_normal[nume].predict(x_test_r)
-
         metrici_normal[nume]["mae"].append(mean_absolute_error(y_test_r, pred))
         metrici_normal[nume]["rmse"].append(np.sqrt(mean_squared_error(y_test_r, pred)))
         metrici_normal[nume]["r2"].append(r2_score(y_test_r, pred))
@@ -165,7 +165,6 @@ for rs in range(10):
         #varianta optimizata
         pipe_optimizat[nume].fit(x_train_r, y_train_r)
         pred = pipe_optimizat[nume].predict(x_test_r)
-
         metrici_optimizat[nume]["mae"].append(mean_absolute_error(y_test_r, pred))
         metrici_optimizat[nume]["rmse"].append(np.sqrt(mean_squared_error(y_test_r, pred)))
         metrici_optimizat[nume]["r2"].append(r2_score(y_test_r, pred))
@@ -207,12 +206,16 @@ for nume in modele:
 
 #validare incrucisata modele optimizate
 print("\n=== Validare incrucisata regresie(5fold)===")
+
+cv_regresie = KFold(n_splits=5, shuffle=True, random_state=42)
+
 for nume, pipe in pipe_optimizat.items():
-    rezultate_cv = cross_validate(pipe, x, y, cv=5, scoring={
+    rezultate_cv = cross_validate(pipe, x, y, cv=cv_regresie, scoring={
         "mae": "neg_mean_absolute_error",
         "rmse": "neg_root_mean_squared_error",
         "r2": "r2"
     },n_jobs=-1)
+
     mae_cv = -rezultate_cv["test_mae"]
     rmse_cv = -rezultate_cv["test_rmse"]
     r2_cv = rezultate_cv["test_r2"]
@@ -223,6 +226,22 @@ for nume, pipe in pipe_optimizat.items():
         f"RMSE={rmse_cv.mean():.3f} (+- {rmse_cv.std():.3f}) "
         f"R2={r2_cv.mean():.3f} (+- {r2_cv.std():.3f})"
     )
+#afisare mae, rmse, r2 normale si optimizate
+def evaluare(nume, y_test, pred):
+    print(f"\n==={nume}===")
+    print(f"MAE: {mean_absolute_error(y_test, pred):.3f}")
+    print(f"RMSE: {np.sqrt(mean_squared_error(y_test, pred)):.3f}")
+    print(f"R2: {r2_score(y_test, pred):.3f}")
+evaluare("Regresie Liniara(normala)", y_test, LinearRegression().fit(x_train, y_train).predict(x_test))
+evaluare("Ridge(normala)", y_test, Ridge(alpha=1.0).fit(x_train, y_train).predict(x_test))
+evaluare("RF(normal)", y_test, RandomForestRegressor(n_estimators=100, random_state=42, n_jobs=-1).fit(x_train, y_train).predict(x_test))
+evaluare("KNN(normal)", y_test, KNeighborsRegressor(n_neighbors=5).fit(x_train, y_train).predict(x_test))
+evaluare("XGB(normal)", y_test, XGBRegressor(n_estimators=200, learning_rate=0.1, max_depth=6, random_state=42, eval_metric="rmse").fit(x_train, y_train).predict(x_test))
+
+evaluare("Ridge(optimizat)", y_test, best_ridge.predict(x_test))
+evaluare("RF(optimizat)", y_test, best_rf.predict(x_test))
+evaluare("KNN(optimizat)", y_test, best_knn.predict(x_test))
+evaluare("XGB(optimizat)", y_test, best_xgb.predict(x_test))
 
 #figura comparatie metrici medie modele optimizate
 fig, axes = plt.subplots(1, 3, figsize=(18, 6))
@@ -273,7 +292,6 @@ plt.savefig("../figuri_regresie/comparatie_r2_normal_vs_optimizat.png", dpi=300,
 plt.show()
 
 #boxplot distributie r2
-
 fig, axes = plt.subplots(1,2, figsize=(16, 6))
 
 axes[0].boxplot([metrici_normal[nume]["r2"] for nume in modele], tick_labels=modele, vert=False)
@@ -290,20 +308,10 @@ plt.tight_layout()
 plt.savefig("../figuri_regresie/boxplot_r2.png", dpi=300, bbox_inches="tight")
 plt.show()
 
-#figuri XGB optimizat, split fix, scaler
-x_train_fig, x_test_fig, y_train_fig, y_test_fig = train_test_split(x, y, test_size=0.2, random_state=42)
-
-scaler_fig = StandardScaler()
-x_train_fig = scaler_fig.fit_transform(x_train_fig)
-x_test_fig = scaler_fig.transform(x_test_fig)
-
-model_xgb_fig = XGBRegressor(**xgb_rand.best_params_, eval_metric="rmse", random_state=42, n_jobs=-1)
-model_xgb_fig.fit(x_train_fig, y_train_fig)
-pred_xgb_fig = model_xgb_fig.predict(x_test_fig)
-
 #valori reale vs prezise xgboost
+pred_xgb_fig = best_xgb.predict(x_test)
 plt.figure(figsize=(8, 6))
-plt.scatter(y_test_fig, pred_xgb_fig, alpha=0.3, s=10, color="steelblue")
+plt.scatter(y_test, pred_xgb_fig, alpha=0.3, s=10, color="steelblue")
 plt.plot([0, 100], [0, 100], color="red", linestyle="--", label="Predictie perfecta")
 plt.xlabel("Popularitate reala")
 plt.ylabel("Popularitate prezisa")
@@ -314,7 +322,7 @@ plt.savefig("../figuri_regresie/valori_reale_vs_prezise_xgb.png", dpi=300, bbox_
 plt.show()
 
 #reziduuri xgboost
-reziduuri = y_test_fig - pred_xgb_fig
+reziduuri = y_test - pred_xgb_fig
 plt.figure(figsize=(8, 6))
 plt.scatter(pred_xgb_fig, reziduuri, alpha=0.3, s=10, color="seagreen")
 plt.axhline(0, color="red", linestyle="--")
@@ -337,7 +345,7 @@ plt.savefig("../figuri_regresie/distributie_reziduuri_xgb.png", dpi=300, bbox_in
 plt.show()
 
 #importanta caracteristicilor xgboost
-importanta = model_xgb_fig.feature_importances_
+importanta = best_xgb.feature_importances_
 indici = np.argsort(importanta)
 
 plt.figure(figsize=(8, 6))
