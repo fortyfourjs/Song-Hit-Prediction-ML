@@ -133,6 +133,24 @@ xgb_rand.fit(x_train, y_train)
 print("Parametri optimi XGB:", xgb_rand.best_params_)
 best_xgb = xgb_rand.best_estimator_
 
+#afisare mae, rmse, r2 normale si optimizate
+def evaluare(nume, y_test, pred):
+    print(f"\n==={nume}===")
+    print(f"MAE: {mean_absolute_error(y_test, pred):.3f}")
+    print(f"RMSE: {np.sqrt(mean_squared_error(y_test, pred)):.3f}")
+    print(f"R2: {r2_score(y_test, pred):.3f}")
+evaluare("Regresie Liniara(normala)", y_test, LinearRegression().fit(x_train, y_train).predict(x_test))
+evaluare("Ridge(normala)", y_test, Ridge(alpha=1.0).fit(x_train, y_train).predict(x_test))
+evaluare("RF(normal)", y_test, RandomForestRegressor(n_estimators=100, random_state=42, n_jobs=-1).fit(x_train, y_train).predict(x_test))
+evaluare("KNN(normal)", y_test, KNeighborsRegressor(n_neighbors=5).fit(x_train, y_train).predict(x_test))
+evaluare("XGB(normal)", y_test, XGBRegressor(n_estimators=200, learning_rate=0.1, max_depth=6, random_state=42, eval_metric="rmse").fit(x_train, y_train).predict(x_test))
+
+evaluare("Ridge(optimizat)", y_test, best_ridge.predict(x_test))
+evaluare("RF(optimizat)", y_test, best_rf.predict(x_test))
+evaluare("KNN(optimizat)", y_test, best_knn.predict(x_test))
+evaluare("XGB(optimizat)", y_test, best_xgb.predict(x_test))
+
+
 pipe_optimizat = {
     "RL": Pipeline([("scaler", StandardScaler()),("model", LinearRegression())]),
     "Ridge": Pipeline([("scaler", StandardScaler()), ("model", best_ridge)]),
@@ -151,7 +169,7 @@ metrici_optimizat = {
 }
 print("\n--- 10 rulari ---")
 for rs in range(10):
-    x_train_r, x_test_r, y_train_r, y_test_r = train_test_split(x, y, test_size=0.2, random_state=rs)
+    x_train_r, x_test_r, y_train_r, y_test_r = train_test_split(x.values, y.values, test_size=0.2, random_state=rs)
 
 
     for nume in modele:
@@ -210,7 +228,7 @@ print("\n=== Validare incrucisata regresie(5fold)===")
 cv_regresie = KFold(n_splits=5, shuffle=True, random_state=42)
 
 for nume, pipe in pipe_optimizat.items():
-    rezultate_cv = cross_validate(pipe, x, y, cv=cv_regresie, scoring={
+    rezultate_cv = cross_validate(pipe, x.values, y.values, cv=cv_regresie, scoring={
         "mae": "neg_mean_absolute_error",
         "rmse": "neg_root_mean_squared_error",
         "r2": "r2"
@@ -226,22 +244,6 @@ for nume, pipe in pipe_optimizat.items():
         f"RMSE={rmse_cv.mean():.3f} (+- {rmse_cv.std():.3f}) "
         f"R2={r2_cv.mean():.3f} (+- {r2_cv.std():.3f})"
     )
-#afisare mae, rmse, r2 normale si optimizate
-def evaluare(nume, y_test, pred):
-    print(f"\n==={nume}===")
-    print(f"MAE: {mean_absolute_error(y_test, pred):.3f}")
-    print(f"RMSE: {np.sqrt(mean_squared_error(y_test, pred)):.3f}")
-    print(f"R2: {r2_score(y_test, pred):.3f}")
-evaluare("Regresie Liniara(normala)", y_test, LinearRegression().fit(x_train, y_train).predict(x_test))
-evaluare("Ridge(normala)", y_test, Ridge(alpha=1.0).fit(x_train, y_train).predict(x_test))
-evaluare("RF(normal)", y_test, RandomForestRegressor(n_estimators=100, random_state=42, n_jobs=-1).fit(x_train, y_train).predict(x_test))
-evaluare("KNN(normal)", y_test, KNeighborsRegressor(n_neighbors=5).fit(x_train, y_train).predict(x_test))
-evaluare("XGB(normal)", y_test, XGBRegressor(n_estimators=200, learning_rate=0.1, max_depth=6, random_state=42, eval_metric="rmse").fit(x_train, y_train).predict(x_test))
-
-evaluare("Ridge(optimizat)", y_test, best_ridge.predict(x_test))
-evaluare("RF(optimizat)", y_test, best_rf.predict(x_test))
-evaluare("KNN(optimizat)", y_test, best_knn.predict(x_test))
-evaluare("XGB(optimizat)", y_test, best_xgb.predict(x_test))
 
 #figura comparatie metrici medie modele optimizate
 fig, axes = plt.subplots(1, 3, figsize=(18, 6))
@@ -308,52 +310,52 @@ plt.tight_layout()
 plt.savefig("../figuri_regresie/boxplot_r2.png", dpi=300, bbox_inches="tight")
 plt.show()
 
-#valori reale vs prezise xgboost
-pred_xgb_fig = best_xgb.predict(x_test)
+#valori reale vs prezise RF(cel mai bun model)
+pred_rf_fig = best_rf.predict(x_test)
 plt.figure(figsize=(8, 6))
-plt.scatter(y_test, pred_xgb_fig, alpha=0.3, s=10, color="steelblue")
+plt.scatter(y_test, pred_rf_fig, alpha=0.3, s=10, color="steelblue")
 plt.plot([0, 100], [0, 100], color="red", linestyle="--", label="Predictie perfecta")
 plt.xlabel("Popularitate reala")
 plt.ylabel("Popularitate prezisa")
-plt.title("Valori reale vs valori prezise - XGBoost")
+plt.title("Valori reale vs valori prezise - Random Forest")
 plt.legend()
 plt.tight_layout()
-plt.savefig("../figuri_regresie/valori_reale_vs_prezise_xgb.png", dpi=300, bbox_inches="tight")
+plt.savefig("../figuri_regresie/valori_reale_vs_prezise_rf.png", dpi=300, bbox_inches="tight")
 plt.show()
 
-#reziduuri xgboost
-reziduuri = y_test - pred_xgb_fig
+#reziduuri rf
+reziduuri = y_test - pred_rf_fig
 plt.figure(figsize=(8, 6))
-plt.scatter(pred_xgb_fig, reziduuri, alpha=0.3, s=10, color="seagreen")
+plt.scatter(pred_rf_fig, reziduuri, alpha=0.3, s=10, color="seagreen")
 plt.axhline(0, color="red", linestyle="--")
 plt.xlabel("Popularitate prezisa")
 plt.ylabel("Reziduuri")
-plt.title("Grafic reziduuri - XGBoost")
+plt.title("Grafic reziduuri - Random Forest")
 plt.tight_layout()
-plt.savefig("../figuri_regresie/reziduuri_xgb.png", dpi=300, bbox_inches="tight")
+plt.savefig("../figuri_regresie/reziduuri_rf.png", dpi=300, bbox_inches="tight")
 plt.show()
 
-#distributia reziduurilor XGBoost
+#distributia reziduurilor rf
 plt.figure(figsize=(8, 5))
 plt.hist(reziduuri, bins=50, color="mediumpurple", edgecolor="white")
 plt.axvline(0, color="red", linestyle="--")
 plt.xlabel("Reziduuri")
 plt.ylabel("Numar")
-plt.title("Distributia reziduurilor - XGBoost")
+plt.title("Distributia reziduurilor - Random Forest")
 plt.tight_layout()
-plt.savefig("../figuri_regresie/distributie_reziduuri_xgb.png", dpi=300, bbox_inches="tight")
+plt.savefig("../figuri_regresie/distributie_reziduuri_rf.png", dpi=300, bbox_inches="tight")
 plt.show()
 
-#importanta caracteristicilor xgboost
-importanta = best_xgb.feature_importances_
+#importanta caracteristicilor rf
+importanta = best_rf.feature_importances_
 indici = np.argsort(importanta)
 
 plt.figure(figsize=(8, 6))
 plt.barh(range(len(indici)), importanta[indici], color="darkorange")
 plt.yticks(range(len(indici)), [caracteristici[i] for i in indici])
-plt.title("Importanta caracteristicilor - XGBoost")
+plt.title("Importanta caracteristicilor - Random Forest")
 plt.tight_layout()
-plt.savefig("../figuri_regresie/importanta_caracteristici_xgb.png", dpi=300, bbox_inches="tight")
+plt.savefig("../figuri_regresie/importanta_caracteristici_rf.png", dpi=300, bbox_inches="tight")
 plt.show()
 
 

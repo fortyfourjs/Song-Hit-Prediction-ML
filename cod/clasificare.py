@@ -85,7 +85,7 @@ x_test = scaler.transform(x_test)
 neg = (y_train == 0).sum()
 pos = (y_train == 1).sum()
 raport = neg / pos
-print(f"Raport clase: {raport:.2f}")
+print(f"Raport clase: {raport:.3f}")
 
 
 #Regresie logistica
@@ -353,27 +353,27 @@ print("-"*110)
 
 for nume in modele:
     m = metrici_optimizat[nume]
-    auc = (f"{np.mean(m['auc']):.3f}+- {np.std(m['auc']):.3f}" if m["auc"] else "---")
+    auc = (f"{np.mean(m['auc']):>8.3f}+- {np.std(m['auc']):.3f}" if m["auc"] else "---")
     print(f"{nume:<6}"
-          f" {np.mean(m['acc']):.3f}+- {np.std(m['acc']):.3f}"
-          f" {np.mean(m['prec']):.3f}+- {np.std(m['prec']):.3f}"
-          f" {np.mean(m['rec']):.3f}+- {np.std(m['rec']):.3f}"
-          f" {np.mean(m['f1']):.3f}+- {np.std(m['f1']):.3f}"
+          f" {np.mean(m['acc']):>8.3f}+- {np.std(m['acc']):.3f}"
+          f" {np.mean(m['prec']):>8.3f}+- {np.std(m['prec']):.3f}"
+          f" {np.mean(m['rec']):>8.3f}+- {np.std(m['rec']):.3f}"
+          f" {np.mean(m['f1']):>8.3f}+- {np.std(m['f1']):.3f}"
           f" {auc}"
           f" {np.mean(m['mcc']):.3f}+- {np.std(m['mcc']):.3f}")
 
 #tabel comparatie varianta normala vs optimizata
 print(f"\n{'Model':<6} {'Acc normal':>18} {'Acc optim':>18}"
       f"{'F1 normal':>18} {'F1 optim':>18}")
-print("-"*78)
+print("-"*82)
 for nume in modele:
     normal = metrici_normal[nume]
     optim = metrici_optimizat[nume]
     print(f"{nume:<6}"
-          f" {np.mean(normal['acc']):.3f}+- {np.std(normal['acc']):.3f}"
-          f" {np.mean(optim['acc']):.3f}+- {np.std(optim['acc']):.3f}"
-          f" {np.mean(normal['f1']):.3f}+- {np.std(normal['f1']):.3f}"
-          f" {np.mean(optim['f1']):.3f}+- {np.std(optim['f1']):.3f}")
+          f" {np.mean(normal['acc']):>8.3f}+- {np.std(normal['acc']):.3f}"
+          f" {np.mean(optim['acc']):>8.3f}+- {np.std(optim['acc']):.3f}"
+          f" {np.mean(normal['f1']):>8.3f}+- {np.std(normal['f1']):.3f}"
+          f" {np.mean(optim['f1']):>8.3f}+- {np.std(optim['f1']):.3f}")
 
 #Validare incrucisata
 print("\n===Validare incrucisata(5fold)===")
@@ -405,7 +405,7 @@ plt.figure(figsize=(8,6))
 plt.plot(prag_decizie, precizie[:-1], label="Precizie")
 plt.plot(prag_decizie, rechemare[:-1], label="Rechemare")
 plt.plot(prag_decizie, scor_f1, label="F1")
-plt.axvline(prag_decizie_optim, color="red", linestyle="--", label=f"Prag de decizie optim: {prag_decizie_optim:.2f}")
+plt.axvline(prag_decizie_optim, color="red", linestyle="--", label=f"Prag de decizie optim: {prag_decizie_optim:.3f}")
 plt.xlabel("Prag de decizie")
 plt.title("Optimizare prag de decizie - XGBoost")
 plt.legend()
