@@ -1,0 +1,101 @@
+Dimensiune dupa eliminarea duplicatelor: (89740, 21)
+Set incarcat
+(89740, 21)
+   Unnamed: 0                track_id  ... time_signature track_genre
+0           0  5SuOikwiRyPMVoIQDJUgSV  ...              4    acoustic
+1           1  4qPNDBW1i3p13qLCt0Ki3A  ...              4    acoustic
+2           2  1iJBSr7s7jYXzM8EGcbK5b  ...              4    acoustic
+3           3  6lfxq3CG4xtTiEg7opyCyx  ...              3    acoustic
+4           4  5vjLSffimiIP26QG5WcN2K  ...              4    acoustic
+
+[5 rows x 21 columns]
+Fitting 5 folds for each of 5 candidates, totalling 25 fits
+Parametri optimi Ridge: {'alpha': 100}
+Fitting 5 folds for each of 81 candidates, totalling 405 fits
+Parametri optimi RF: {'max_depth': None, 'min_samples_leaf': 1, 'min_samples_split': 2, 'n_estimators': 300}
+Fitting 5 folds for each of 24 candidates, totalling 120 fits
+Parametri optimi KNN: {'metric': 'manhattan', 'n_neighbors': 21, 'weights': 'distance'}
+Fitting 5 folds for each of 30 candidates, totalling 150 fits
+Parametri optimi XGB: {'colsample_bytree': 0.8, 'learning_rate': 0.1, 'max_depth': 7, 'n_estimators': 379, 'subsample': 0.8}
+
+===Regresie Liniara(normala)===
+MAE: 16.584
+RMSE: 20.128
+R2: 0.031
+
+===Ridge(normala)===
+MAE: 16.584
+RMSE: 20.128
+R2: 0.031
+
+===RF(normal)===
+MAE: 13.501
+RMSE: 17.698
+R2: 0.251
+
+===KNN(normal)===
+MAE: 15.581
+RMSE: 20.064
+R2: 0.037
+
+===XGB(normal)===
+MAE: 14.888
+RMSE: 18.673
+R2: 0.166
+
+===Ridge(optimizat)===
+MAE: 16.584
+RMSE: 20.128
+R2: 0.031
+
+===RF(optimizat)===
+MAE: 13.464
+RMSE: 17.641
+R2: 0.256
+
+===KNN(optimizat)===
+MAE: 13.936
+RMSE: 18.619
+R2: 0.171
+
+===XGB(optimizat)===
+MAE: 14.337
+RMSE: 18.207
+R2: 0.207
+
+--- 10 rulari ---
+rulare 1/10
+rulare 2/10
+rulare 3/10
+rulare 4/10
+rulare 5/10
+rulare 6/10
+rulare 7/10
+rulare 8/10
+rulare 9/10
+rulare 10/10
+
+Model                   MAE               RMSE                 R2
+----------------------------------------------------------------------
+RL         16.666 +- 0.076   20.235 +- 0.082    0.033 +- 0.001
+Ridge      16.666 +- 0.076   20.235 +- 0.082    0.033 +- 0.001
+RF         13.579 +- 0.083   17.766 +- 0.113    0.255 +- 0.006
+KNN        14.075 +- 0.063   18.700 +- 0.099    0.174 +- 0.006
+XGB        14.428 +- 0.081   18.324 +- 0.105    0.207 +- 0.006
+
+Model           MAE normal          MAE optim       RMSE normal         RMSE optim         R2 normal           R2 optim
+----------------------------------------------------------------------------------------------------------------------------------
+RL         16.666 +- 0.076   16.666 +- 0.076   20.235 +- 0.082   20.235 +- 0.082    0.033 +- 0.001    0.033 +- 0.001
+Ridge      16.666 +- 0.076   16.666 +- 0.076   20.235 +- 0.082   20.235 +- 0.082    0.033 +- 0.001    0.033 +- 0.001
+RF         13.626 +- 0.078   13.579 +- 0.083   17.828 +- 0.111   17.766 +- 0.113    0.249 +- 0.006    0.255 +- 0.006
+KNN        15.646 +- 0.075   14.075 +- 0.063   20.174 +- 0.067   18.700 +- 0.099    0.039 +- 0.006    0.174 +- 0.006
+XGB        14.932 +- 0.076   14.428 +- 0.081   18.736 +- 0.088   18.324 +- 0.105    0.171 +- 0.004    0.207 +- 0.006
+
+=== Validare incrucisata regresie(5fold)===
+RL: MAE=16.668 (+- 0.064) RMSE=20.232 (+- 0.071) R2=0.034 (+- 0.002)
+Ridge: MAE=16.669 (+- 0.064) RMSE=20.232 (+- 0.071) R2=0.034 (+- 0.002)
+RF: MAE=13.570 (+- 0.060) RMSE=17.761 (+- 0.068) R2=0.255 (+- 0.003)
+KNN: MAE=14.049 (+- 0.069) RMSE=18.694 (+- 0.070) R2=0.175 (+- 0.003)
+XGB: MAE=14.416 (+- 0.036) RMSE=18.309 (+- 0.035) R2=0.209 (+- 0.006)
+
+Process finished with exit code 0

@@ -1,0 +1,177 @@
+Dimensiune dupa eliminarea duplicatelor: (89740, 21)
+Set incarcat
+(89740, 21)
+   Unnamed: 0                track_id  ... time_signature track_genre
+0           0  5SuOikwiRyPMVoIQDJUgSV  ...              4    acoustic
+1           1  4qPNDBW1i3p13qLCt0Ki3A  ...              4    acoustic
+2           2  1iJBSr7s7jYXzM8EGcbK5b  ...              4    acoustic
+3           3  6lfxq3CG4xtTiEg7opyCyx  ...              3    acoustic
+4           4  5vjLSffimiIP26QG5WcN2K  ...              4    acoustic
+
+[5 rows x 21 columns]
+Prag popularitate(top 25%): 49.0
+hit
+0    67220
+1    22520
+Name: count, dtype: int64
+Raport clase: 2.965
+
+== Regresie Logistica(varianta normala) ===
+              precision    recall  f1-score   support
+
+           0       0.82      0.56      0.67     13534
+           1       0.31      0.62      0.42      4414
+
+    accuracy                           0.57     17948
+   macro avg       0.57      0.59      0.54     17948
+weighted avg       0.69      0.57      0.60     17948
+
+Fitting 5 folds for each of 10 candidates, totalling 50 fits
+Parametri optimi RL: {'C': 1, 'solver': 'liblinear'}
+
+ === Regresie Logistica(varianta optimizata) ===
+              precision    recall  f1-score   support
+
+           0       0.82      0.56      0.67     13534
+           1       0.31      0.62      0.42      4414
+
+    accuracy                           0.57     17948
+   macro avg       0.57      0.59      0.54     17948
+weighted avg       0.69      0.57      0.60     17948
+
+
+===Random Forest(varianta normala) ===
+              precision    recall  f1-score   support
+
+           0       0.78      0.97      0.86     13534
+           1       0.62      0.14      0.23      4414
+
+    accuracy                           0.77     17948
+   macro avg       0.70      0.56      0.54     17948
+weighted avg       0.74      0.77      0.71     17948
+
+Fitting 5 folds for each of 108 candidates, totalling 540 fits
+Parametri optimi RF: {'max_depth': 10, 'min_samples_leaf': 2, 'min_samples_split': 10, 'n_estimators': 100}
+Cel mai bun scor F1: 0.466357521138662
+
+ === Random Forest(varianta optimizata) ===
+              precision    recall  f1-score   support
+
+           0       0.85      0.59      0.69     13534
+           1       0.35      0.68      0.46      4414
+
+    accuracy                           0.61     17948
+   macro avg       0.60      0.63      0.58     17948
+weighted avg       0.73      0.61      0.64     17948
+
+
+=== KNN(varianta normala ===
+              precision    recall  f1-score   support
+
+           0       0.78      0.88      0.83     13534
+           1       0.40      0.25      0.30      4414
+
+    accuracy                           0.72     17948
+   macro avg       0.59      0.56      0.57     17948
+weighted avg       0.69      0.72      0.70     17948
+
+Fitting 5 folds for each of 24 candidates, totalling 120 fits
+Parametri optimi KNN: {'metric': 'manhattan', 'n_neighbors': 3, 'weights': 'distance'}
+
+ === KNN(varianta optimizata) ===
+              precision    recall  f1-score   support
+
+           0       0.79      0.85      0.82     13534
+           1       0.40      0.32      0.36      4414
+
+    accuracy                           0.72     17948
+   macro avg       0.60      0.58      0.59     17948
+weighted avg       0.70      0.72      0.70     17948
+
+
+=== SVM(varianta normala) ===
+              precision    recall  f1-score   support
+
+           0       0.82      0.56      0.66     13534
+           1       0.31      0.62      0.42      4414
+
+    accuracy                           0.57     17948
+   macro avg       0.57      0.59      0.54     17948
+weighted avg       0.69      0.57      0.60     17948
+
+Fitting 5 folds for each of 4 candidates, totalling 20 fits
+Parametri optimi SVM: {'C': 0.01, 'max_iter': 2000}
+
+ === SVM(varianta optimizata) ===
+              precision    recall  f1-score   support
+
+           0       0.82      0.56      0.66     13534
+           1       0.31      0.62      0.42      4414
+
+    accuracy                           0.57     17948
+   macro avg       0.57      0.59      0.54     17948
+weighted avg       0.69      0.57      0.60     17948
+
+
+=== XGB(varianta normala) ===
+              precision    recall  f1-score   support
+
+           0       0.85      0.63      0.72     13534
+           1       0.36      0.66      0.47      4414
+
+    accuracy                           0.63     17948
+   macro avg       0.61      0.64      0.59     17948
+weighted avg       0.73      0.63      0.66     17948
+
+Fitting 5 folds for each of 30 candidates, totalling 150 fits
+Parametri optimi XGB: {'colsample_bytree': 0.8, 'learning_rate': 0.05, 'max_depth': 7, 'n_estimators': 335, 'subsample': 0.6}
+
+ === XGBoost(varianta optimizata) ===
+              precision    recall  f1-score   support
+
+           0       0.85      0.65      0.74     13534
+           1       0.38      0.64      0.47      4414
+
+    accuracy                           0.65     17948
+   macro avg       0.61      0.65      0.61     17948
+weighted avg       0.73      0.65      0.67     17948
+
+
+ --- 10 rulari ---
+rulare 1/10
+rulare 2/10
+rulare 3/10
+rulare 4/10
+rulare 5/10
+rulare 6/10
+rulare 7/10
+rulare 8/10
+rulare 9/10
+rulare 10/10
+
+Model            Accuracy          Precision             Recall                F1                AUC                MCC
+--------------------------------------------------------------------------------------------------------------
+RL        0.573+- 0.002    0.319+- 0.003    0.615+- 0.008    0.420+- 0.004    0.624+- 0.003 0.151+- 0.006
+RF        0.608+- 0.004    0.353+- 0.004    0.671+- 0.009    0.462+- 0.004    0.682+- 0.004 0.224+- 0.006
+KNN       0.713+- 0.003    0.409+- 0.006    0.320+- 0.006    0.359+- 0.005    0.633+- 0.004 0.180+- 0.006
+SVM       0.573+- 0.002    0.319+- 0.003    0.618+- 0.008    0.421+- 0.003 --- 0.152+- 0.006
+XGB       0.651+- 0.004    0.384+- 0.006    0.645+- 0.009    0.481+- 0.005    0.709+- 0.003 0.261+- 0.007
+
+Model          Acc normal          Acc optim         F1 normal           F1 optim
+----------------------------------------------------------------------------------
+RL        0.573+- 0.002    0.573+- 0.002    0.420+- 0.004    0.420+- 0.004
+RF        0.760+- 0.002    0.608+- 0.004    0.221+- 0.004    0.462+- 0.004
+KNN       0.720+- 0.002    0.713+- 0.003    0.308+- 0.004    0.359+- 0.005
+SVM       0.573+- 0.002    0.573+- 0.002    0.421+- 0.003    0.421+- 0.003
+XGB       0.642+- 0.002    0.651+- 0.004    0.471+- 0.003    0.481+- 0.005
+
+===Validare incrucisata(5fold)===
+RL: Accuracy=0.562 F1=0.408
+RF: Accuracy=0.570 F1=0.419
+KNN: Accuracy=0.668 F1=0.287
+SVM: Accuracy=0.561 F1=0.408
+XGB: Accuracy=0.601 F1=0.421
+
+Prag de decizie optim XGBoost: 0.482
+
+Process finished with exit code 0
